@@ -52,7 +52,7 @@ class VideosApi {
             var end = ranges[0].end;
             // formatting response
             res.status(206);
-            res.set('Content-Length', "" + (end - start) + 1); // end is inclusive
+            res.set('Content-Length', "" + (end - start + 1)); // end is inclusive
             res.set('Content-Range', 'bytes ' + start + '-' + end + '/' + length);
             // slicing the stream to partial content
             stream = stream.pipe(rangeStream(start, end));

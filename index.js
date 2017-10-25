@@ -2,6 +2,8 @@ import {Router} from "express";
 const express = require("express");
 const bodyParser = require("body-parser");
 const compression = require("compression");
+const http = require("http");
+const WebSocket = require('ws');
 
 import LocalStorage from "./impl/local/LocalStorage";
 import FileBasedDb from "./impl/local/FileBasedDb";
@@ -35,52 +37,60 @@ app.get("/health", healthApi);
 import IpsApi from "./apis/Ips";
 app.get("/api/v1.0/server/ips", IpsApi);
 
+import VideosMapper from "./impl/VideosMapper";
+let videoMapper = new VideosMapper(db, localStorage, false , true);
+
 let filesRouter = new Router();
 import FilesApi from "./apis/Files";
-let filesApi = new FilesApi(localStorage, filesRouter);
+let filesApi = new FilesApi(videoMapper, filesRouter);
 app.use("/api/v1.0/folders", filesRouter);
+
+let profileRouter = new Router();
+import ProfilesApi from "./apis/Profiles";
+let profilesApi = new ProfilesApi(db, profileRouter);
+app.use("/api/v1.0/profiles", profileRouter);
 
 let videoRouter = new Router();
 import VideosApi from "./apis/LocalVideos";
 let videosApi = new VideosApi(localStorage, videoRouter);
 app.use("/videos", videoRouter);
 
-import VideosMapper from "./impl/VideosMapper";
-let videoMapper = new VideosMapper(db, localStorage);
-
 videoMapper.scanIndexedFolders();
 
 let tvRouter = new Router();
 import TvShowsApi from "./apis/TvShows";
-let tvShowsApi = new TvShowsApi(videoMapper, tvRouter);
+let tvShowsApi = new TvShowsApi(videoMapper, db, tvRouter);
 app.use("/api/v1.0/shows", tvRouter);
 
 
 app.use(express.static('ui'));
 
-app.listen(app.get("port"), () => {
-    console.log(("  App is running at http://localhost:%d in %s mode"), app.get("port"), app.get("env"));
-    console.log("  Press CTRL-C to stop\n");
+const server = http.createServer(app);
+
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', function connection(ws, req) {
+  ws.on('message', function incoming(message) {
+    message = JSON.parse(message);
+    if(message.action == "setId") {
+        ws.id = message.id;
+    } else if (message.client) {
+        wss.clients.forEach(function each(client) {
+            if (client.id == message.client && client.readyState === WebSocket.OPEN) {
+                client.send(data);
+            }
+        });
+    } else if(message.action == "list") {
+        let ids = wss.clients.map((client) => {
+            return client.id;
+        });
+        ws.send(JSON.stringify(ids));
+    }
+  });
 });
 
-let ws = require("nodejs-websocket");
- 
-// Scream server example: "hi" -> "HI!!!" 
-var server = ws.createServer(function (conn) {
-    console.log("New connection")
-    conn.on("text", function (str) {
-        console.log("Received "+str)
-        conn.sendText(str.toUpperCase())
-    })
-    conn.on("close", function (code, reason) {
-        console.log("Connection closed")
-    })
-    conn.on('error', function (err) {
-    if (err.code !== 'ECONNRESET') {
-            // Ignore ECONNRESET and re throw anything else
-            throw err
-        }
-    })
-}).listen(port +1);
+server.listen(port, function listening() {
+  console.log('Listening on %d', server.address().port);
+});
 
 module.exports = app;

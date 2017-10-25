@@ -21,9 +21,11 @@
     "cors": "^2.8.4",
     "express": "^4.15.3",
     "http": "^0.0.0",
+    "mkdirp": "^0.5.1",
     "node-watch": "^0.5.5",
     "nodejs-websocket": "^1.7.1",
     "send-seekable": "^1.0.4",
-    "uuid": "^3.1.0"
+    "uuid": "^3.1.0",
+    "ws": "^3.2.0"
   }
 }

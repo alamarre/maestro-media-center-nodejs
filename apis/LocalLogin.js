@@ -32,7 +32,7 @@ class LocalLogin {
     }
     validateAuth(req, res, next) {
         // skip if no auth needed
-        if (req.path == "/api/v1.0/login") {
+        if (req.path == "/api/v1.0/login" || req.path.startsWith("/videos") || req.path == "/health") {
             next();
             return;
         }
@@ -50,6 +50,9 @@ class LocalLogin {
             if (username == null) {
                 res.status(403).json({ "status": "unauthorized" });
                 return;
+            } else {
+                req.username = username;
+                req.profile = req.query["profile"];
             }
         }
         next();

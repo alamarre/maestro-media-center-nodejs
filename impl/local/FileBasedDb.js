@@ -1,4 +1,6 @@
 var fs = require('fs');
+var mkdirp = require('mkdirp');
+var path = require('path');
 
 class FileBasedDb {
     constructor(rootPath) {
@@ -9,21 +11,27 @@ class FileBasedDb {
         let path = pathParts.join("/");
         return path;
     }
-    get(...path) {
-        let file = this.getKey(path);
+    get(...pathParams) {
+        let file = this.getKey(pathParams);
         if (fs.existsSync(file) && fs.lstatSync(file).isFile()) {
             let result = JSON.parse(fs.readFileSync(file));
             return result;
         }
         return null;
     }
-    set(value, ...path) {
-        let file = this.getKey(path);
+    set(value, ...pathParams) {
+        let file = this.getKey(pathParams);
+        let parentDir = path.dirname(file);
+        mkdirp.sync(parentDir);
         fs.writeFileSync(file, JSON.stringify(value));
     }
     list(...prefix) {
         let results = [];
         let directory = this.getKey(prefix);
+        if(!fs.existsSync(directory)) {
+            return [];
+        }
+
         var files = fs.readdirSync(directory);
         for (var file of files) {
             let path = directory + "/" + file;
