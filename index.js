@@ -69,22 +69,46 @@ const server = http.createServer(app);
 
 const wss = new WebSocket.Server({ server });
 
+let ids = {};
+
 wss.on('connection', function connection(ws, req) {
+
+  ws.on('close', () => {
+    if(ws.id) {
+        delete ids[ws.id];
+    }
+  });
   ws.on('message', function incoming(message) {
     message = JSON.parse(message);
     if(message.action == "setId") {
+        if(ws.id) {
+            delete ids[ws.id];
+        }
+
         ws.id = message.id;
+        ids[ws.id] = true;
+
+        for(let client of wss.clients) {
+            if (client.keepUpdating) {
+                client.send(JSON.stringify({"action": "list", ids: Object.keys(ids)}));
+            }
+        }
+    } else if(message.action == "deregister") {
+        if(ws.id) {
+            delete ids[ws.id];
+            delete ws.id;
+        }
     } else if (message.client) {
         wss.clients.forEach(function each(client) {
             if (client.id == message.client && client.readyState === WebSocket.OPEN) {
-                client.send(data);
+                client.send(JSON.stringify(message));
             }
         });
     } else if(message.action == "list") {
-        let ids = wss.clients.map((client) => {
-            return client.id;
-        });
-        ws.send(JSON.stringify(ids));
+        if(message.keepUpdating) {
+            ws.keepUpdating = true;
+        }
+        ws.send(JSON.stringify({"action": "list", ids: Object.keys(ids)}));
     }
   });
 });
