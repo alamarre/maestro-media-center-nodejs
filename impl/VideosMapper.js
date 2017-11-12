@@ -243,4 +243,4 @@ class VideosMapper {
     }
 }
 
-export default VideosMapper;
+module.exports = VideosMapper;

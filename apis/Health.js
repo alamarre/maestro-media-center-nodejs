@@ -3,4 +3,4 @@ let health = (req, res, next) => {
     res.json({ "errors": "0", "clientIp": req.client.remoteAddress});
 };
 
-export default health;
+module.exports=health;

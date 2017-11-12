@@ -32,7 +32,7 @@ class LocalLogin {
     }
     validateAuth(req, res, next) {
         // skip if no auth needed
-        if (req.path == "/api/v1.0/login" || req.path.startsWith("/videos") || req.path == "/health") {
+        if (req.path == "/api/v1.0/login" || !req.path.startsWith("/api")) {
             next();
             return;
         }
@@ -73,4 +73,4 @@ class LocalLogin {
         return null;
     }
 }
-export default LocalLogin;
+module.exports=LocalLogin;

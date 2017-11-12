@@ -50,4 +50,4 @@ class FileBasedDb {
     }
 }
 
-export default FileBasedDb;
+module.exports = FileBasedDb;

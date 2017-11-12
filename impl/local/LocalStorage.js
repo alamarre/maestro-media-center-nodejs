@@ -1,4 +1,4 @@
-import DirectoryListing from "../../models/DirectoryListing";
+const DirectoryListing = require("../../models/DirectoryListing");
 var fs = require('fs');
 var watch = require("node-watch");
 class LocalStorage {
@@ -98,4 +98,4 @@ class LocalStorage {
     }
 }
 
-export default LocalStorage;
+module.exports = LocalStorage;

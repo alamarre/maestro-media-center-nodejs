@@ -15,4 +15,4 @@ addresses.push("127.0.0.1");
 exports.ip = (req, res, next) => {
     res.json(addresses);
 };
-export default exports.ip;
+module.exports=exports.ip;

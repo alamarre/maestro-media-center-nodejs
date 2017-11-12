@@ -26,4 +26,4 @@ class FilesApi {
     }
 }
 
-export default FilesApi;
+module.exports=FilesApi;

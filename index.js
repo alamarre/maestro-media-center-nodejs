@@ -1,12 +1,13 @@
-import {Router} from "express";
+
 const express = require("express");
+const Router = express.Router;
 const bodyParser = require("body-parser");
 const compression = require("compression");
 const http = require("http");
 const WebSocket = require('ws');
 
-import LocalStorage from "./impl/local/LocalStorage";
-import FileBasedDb from "./impl/local/FileBasedDb";
+const LocalStorage =require("./impl/local/LocalStorage");
+const FileBasedDb  = require("./impl/local/FileBasedDb");
 const app = express();
 let port = 3000;
 let portString = process.env.PORT;
@@ -24,41 +25,41 @@ app.use(bodyParser.json());
 let db = new FileBasedDb("./db");
 let localStorage = new LocalStorage(db);
 
-import SimplePasswordAuth from "./impl/Local/SimplePasswordAuth";
-import LocalLogin from "./apis/LocalLogin";
-let loginRouter = new Router();
+const SimplePasswordAuth = require("./impl/Local/SimplePasswordAuth");
+const LocalLogin = require("./apis/LocalLogin");
+let loginRouter = Router();
 let loginApi = new LocalLogin(db, new SimplePasswordAuth(db), loginRouter);
 app.use("/api/v1.0/login", loginRouter);
 app.use(loginApi.validateAuth.bind(loginApi));
 
-import healthApi from "./apis/Health";
+const healthApi = require("./apis/Health");
 app.get("/health", healthApi);
 
-import IpsApi from "./apis/Ips";
+const IpsApi = require("./apis/Ips");
 app.get("/api/v1.0/server/ips", IpsApi);
 
-import VideosMapper from "./impl/VideosMapper";
+const VideosMapper = require("./impl/VideosMapper");
 let videoMapper = new VideosMapper(db, localStorage, false , true);
 
-let filesRouter = new Router();
-import FilesApi from "./apis/Files";
+let filesRouter = Router();
+const FilesApi = require("./apis/Files");
 let filesApi = new FilesApi(videoMapper, filesRouter);
 app.use("/api/v1.0/folders", filesRouter);
 
-let profileRouter = new Router();
-import ProfilesApi from "./apis/Profiles";
+let profileRouter = Router();
+const ProfilesApi = require("./apis/Profiles");
 let profilesApi = new ProfilesApi(db, profileRouter);
 app.use("/api/v1.0/profiles", profileRouter);
 
-let videoRouter = new Router();
-import VideosApi from "./apis/LocalVideos";
+let videoRouter = Router();
+const VideosApi = require("./apis/LocalVideos");
 let videosApi = new VideosApi(localStorage, videoRouter);
 app.use("/videos", videoRouter);
 
 videoMapper.scanIndexedFolders();
 
-let tvRouter = new Router();
-import TvShowsApi from "./apis/TvShows";
+let tvRouter = Router();
+const TvShowsApi = require("./apis/TvShows");
 let tvShowsApi = new TvShowsApi(videoMapper, db, tvRouter);
 app.use("/api/v1.0/shows", tvRouter);
 

@@ -34,4 +34,4 @@ class TvShowsApi {
     }
 }
 
-export default TvShowsApi;
+module.exports=TvShowsApi;

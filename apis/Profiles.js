@@ -22,4 +22,4 @@ class ProfilesApi {
     }
 }
 
-export default ProfilesApi;
+module.exports=ProfilesApi;

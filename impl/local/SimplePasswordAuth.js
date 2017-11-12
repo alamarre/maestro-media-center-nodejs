@@ -14,4 +14,4 @@ class SimplePasswordAuth {
         return token;
     }
 }
-export default SimplePasswordAuth;
+module.exports = SimplePasswordAuth;

@@ -1,4 +1,3 @@
-import {Router} from "express";
 var fs = require("fs");
 var rangeStream = require('range-stream');
 var parseRange = require('range-parser');
@@ -61,4 +60,4 @@ class VideosApi {
     }
 }
 
-export default VideosApi;
+module.exports=VideosApi;
