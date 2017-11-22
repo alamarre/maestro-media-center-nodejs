@@ -54,23 +54,25 @@ class VideosMapper {
     }
 
     handleFolderAddEvent(folder, file) {
+        console.log(`detected addition of ${file} in ${folder.name}`);
         let isFile = fs.lstatSync(folder.path +"/" + file).isFile();
         if(isFile) {
             this.addFileToCache(folder.name, file);
         } else {
             // recursively add files
-            let queue = [file];
+            let parent = this.getParent(folder.name, file+"/");
+
+            let queue = [{parent: parent, path: file}];
+            
             while(queue.length > 0) {
-                let nextPath = queue.shift();
-                let parent = this.getParent(folder.name, file);
-                let shortName = file.substring(file.lastIndexOf("/")+1);
-                parent.folders[shortName] = {"files":{}, "folders": {}};
-                this.scanFolder(folder, parent, nextPath, queue);
+                let next = queue.shift();
+                this.scanFolder(folder, next.parent, next.path, queue, false);
             }
         }
     }
 
     handleFolderDeleteEvent(folder, file) {
+        console.log(`detected delete of ${file} from ${folder.name}`);
         let parentFolderName = "";
         let filename = file;
         if(file.indexOf("/") >= 0) {
@@ -95,8 +97,14 @@ class VideosMapper {
         }
     }
 
-    scanFolder(folder, parent, relativePath, queue) {
+    scanFolder(folder, parent, relativePath, queue, log) {
         let filesAndFolders = this.storageProvider.listFilesAndFolders(folder, relativePath);
+        
+        if(log) {
+            console.log(relativePath);
+            console.log(JSON.stringify(filesAndFolders));
+        }
+
         for(var i=0; i< filesAndFolders.files.length; i++) {
             let file = filesAndFolders.files[i];
             this.addFileToCache(folder.name, relativePath + "/" + file);
