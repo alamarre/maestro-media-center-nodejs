@@ -21,6 +21,7 @@ class LocalStorage {
         watch(folder.path, {recursive: true}, function(event, filename) {
             if(filename.indexOf(".DS_Store") < 0) {
                 let relativeFile = filename.substring(folder.path.length);
+                relativeFile = relativeFile.replace("\\", "/");
                 if(relativeFile.indexOf("/")==0) {
                     relativeFile = relativeFile.substring(1);
                 }
@@ -62,6 +63,7 @@ class LocalStorage {
         if (fs.existsSync(path)) {
             var fileListing = fs.readdirSync(path);
             for (var file of fileListing) {
+                file = file.replace("\\", "/");
                 let filePath = path + "/" + file;
                 if(filePath.indexOf(".DS_Store") < 0) {
                     if (fs.lstatSync(filePath).isFile()) {
