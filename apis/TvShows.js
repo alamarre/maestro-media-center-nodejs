@@ -6,8 +6,7 @@ class TvShowsApi {
         this.db = db;
     }
 
-    get(req, res, next) {
-        let path = req.query.path;
+    get(req, res) {
         if(req.query.season) {
             res.json(this.videosMapper.getEpisodes(req.query.show, req.query.season));
         } else if(req.query.show) {
@@ -17,20 +16,20 @@ class TvShowsApi {
         }
     }
 
-    listShowsInProgress(req, res, next) {
+    listShowsInProgress(req, res) {
         res.json(this.db.list("user_data", req.username, req.profile, "tv_shows_keep_watching"));
     }
 
-    postShowProgress(req, res, next) {
-        let obj = req.body;
+    postShowProgress(req, res) {
+        const obj = req.body;
         this.db.set(obj, "user_data", req.username, req.profile, "tv_shows_keep_watching", obj.show);
         res.send("OK");
     }
     
     init() {
-        this.router.get('/', this.get.bind(this));
-        this.router.get('/keep-watching', this.listShowsInProgress.bind(this));
-        this.router.post('/keep-watching', this.postShowProgress.bind(this));
+        this.router.get("/", this.get.bind(this));
+        this.router.get("/keep-watching", this.listShowsInProgress.bind(this));
+        this.router.post("/keep-watching", this.postShowProgress.bind(this));
     }
 }
 

@@ -1,9 +1,10 @@
-let fs = require("fs");
+const fs = require("fs");
+
 class VideosMapper {
     constructor(db, storageProvider, allowNonCachedTvShows, oneTimePassNonWatchable) {
         this.db = db;
         this.storageProvider = storageProvider;
-        this.cachedFolders = {"files": {}, "folders": {}};
+        this.cachedFolders = {"files": {}, "folders": {},};
         this.allowNonCachedTvShows = allowNonCachedTvShows;
         this.oneTimePassNonWatchable = oneTimePassNonWatchable;
     }
@@ -17,15 +18,15 @@ class VideosMapper {
     }
 
     getRootFolders() {
-        let rootFolders = this.storageProvider.getRootFolders();
+        const rootFolders = this.storageProvider.getRootFolders();
         return rootFolders;
     }
 
     scanIndexedFolders() {
-        this.cachedFolders = {"files": {}, "folders": {}};
-        let folders = this.getRootFolders();
+        this.cachedFolders = {"files": {}, "folders": {},};
+        const folders = this.getRootFolders();
         for(var i =0; i<folders.length; i++) {
-            let folder = folders[i];
+            const folder = folders[i];
             if(folder.index) {
                 this.scanFoldersUsingQueue(folder);
 
@@ -44,28 +45,28 @@ class VideosMapper {
             path = path.substring(1);
         }
         
-        let parts = path.split("/");
-        let root = parts.shift();
-        let cache = this.getCachedListing({name: root}, parts.join("/"));
+        const parts = path.split("/");
+        const root = parts.shift();
+        const cache = this.getCachedListing({name: root,}, parts.join("/"));
         return {
             folders: Object.keys(cache.folders),
-            files: Object.keys(cache.files)
+            files: Object.keys(cache.files),
         };
     }
 
     handleFolderAddEvent(folder, file) {
         console.log(`detected addition of ${file} in ${folder.name}`);
-        let isFile = fs.lstatSync(folder.path +"/" + file).isFile();
+        const isFile = fs.lstatSync(folder.path +"/" + file).isFile();
         if(isFile) {
             this.addFileToCache(folder.name, file);
         } else {
             // recursively add files
-            let parent = this.getParent(folder.name, file+"/");
+            const parent = this.getParent(folder.name, file+"/");
 
-            let queue = [{parent: parent, path: file}];
+            const queue = [{parent: parent, path: file,},];
             
             while(queue.length > 0) {
-                let next = queue.shift();
+                const next = queue.shift();
                 this.scanFolder(folder, next.parent, next.path, queue, false);
             }
         }
@@ -80,7 +81,7 @@ class VideosMapper {
             filename = file.substring(file.lastIndexOf("/")+1);
         }
 
-        let parentFolder = this.getCachedListing(folder, parentFolderName);
+        const parentFolder = this.getCachedListing(folder, parentFolderName);
         if(parentFolder.folders[filename]) {
             delete parentFolder.folders[filename];
         } else if (parentFolder.files[filename]) {
@@ -89,35 +90,35 @@ class VideosMapper {
     }
 
     scanFoldersUsingQueue(rootFolder) {
-        this.cachedFolders.folders[rootFolder.name] = {"files": {}, "folders": {}};
-        let queue = [{path: "", parent:  this.cachedFolders.folders[rootFolder.name]}];
+        this.cachedFolders.folders[rootFolder.name] = {"files": {}, "folders": {},};
+        const queue = [{path: "", parent:  this.cachedFolders.folders[rootFolder.name],},];
         while(queue.length > 0) {
-            let next = queue.shift();
+            const next = queue.shift();
             this.scanFolder(rootFolder, next.parent, next.path, queue);
         }
     }
 
     scanFolder(folder, parent, relativePath, queue, log) {
-        let filesAndFolders = this.storageProvider.listFilesAndFolders(folder, relativePath);
+        const filesAndFolders = this.storageProvider.listFilesAndFolders(folder, relativePath);
         
         if(log) {
             console.log(relativePath);
             console.log(JSON.stringify(filesAndFolders));
         }
 
-        for(var i=0; i< filesAndFolders.files.length; i++) {
-            let file = filesAndFolders.files[i];
+        for(let i=0; i< filesAndFolders.files.length; i++) {
+            const file = filesAndFolders.files[i];
             this.addFileToCache(folder.name, relativePath + "/" + file);
         }
 
-        for(var i=0; i< filesAndFolders.folders.length; i++) {
-            let currentFolder = filesAndFolders.folders[i];
+        for(let i=0; i< filesAndFolders.folders.length; i++) {
+            const currentFolder = filesAndFolders.folders[i];
             let folderpath = relativePath + "/" + currentFolder;
             if(folderpath.indexOf("/")==0) {
                 folderpath = folderpath.substring(1);
             }
-            parent.folders[currentFolder] = {"files": {}, "folders": {}};
-            queue.push({path: folderpath, parent: parent.folders[currentFolder]});
+            parent.folders[currentFolder] = {"files": {}, "folders": {},};
+            queue.push({path: folderpath, parent: parent.folders[currentFolder],});
         }
     }
 
@@ -126,9 +127,9 @@ class VideosMapper {
             relativePath = relativePath.substring(1);
         }
 
-        let parent = this.getParent(rootFolderName, relativePath);
+        const parent = this.getParent(rootFolderName, relativePath);
 
-        let pathParts = relativePath.split("/");
+        const pathParts = relativePath.split("/");
         parent.files[pathParts[pathParts.length -1]] = relativePath;
     }
 
@@ -137,12 +138,12 @@ class VideosMapper {
             relativePath = relativePath.substring(1);
         }
 
-        let pathParts = relativePath.split("/");
+        const pathParts = relativePath.split("/");
         let currentParent = this.cachedFolders;
         pathParts.unshift(rootFolderName);
         for(var i=0; i < pathParts.length -1; i++) {
             if(!currentParent.folders[pathParts[i]]) {
-                currentParent.folders[pathParts[i]] = {"files": {}, "folders": {}};
+                currentParent.folders[pathParts[i]] = {"files": {}, "folders": {},};
             }
             currentParent = currentParent.folders[pathParts[i]];
         }
@@ -150,18 +151,11 @@ class VideosMapper {
         return currentParent;
     }
 
-    getTvShowListPromise() {
-        let promise = new Promise(function(success, error) {
-
-        });
-        return promise;
-    }
-
     getTvShows() {
-        let uniqueList = {};
-        let folders = this.getRootFolders();
-        for(var i =0; i<folders.length; i++) {
-            let folder = folders[i];
+        const uniqueList = {};
+        const folders = this.getRootFolders();
+        for(let i =0; i<folders.length; i++) {
+            const folder = folders[i];
             if(folder.type == "TV") {
                 let currentShows = [];
                 if(folder.index || this.oneTimePassNonWatchable) {
@@ -179,10 +173,10 @@ class VideosMapper {
     }
 
     getSeasons(showName) {
-        let uniqueList = {};
-        let folders = this.getRootFolders();
+        const uniqueList = {};
+        const folders = this.getRootFolders();
         for(var i =0; i<folders.length; i++) {
-            let folder = folders[i];
+            const folder = folders[i];
             if(folder.type == "TV") {
                 let currentSeasons = [];
                 if(folder.index || this.oneTimePassNonWatchable) {
@@ -214,7 +208,7 @@ class VideosMapper {
         pathParts.unshift(folder.name);
 
         if(!relativePath || relativePath == "") {
-            pathParts = [folder.name];
+            pathParts = [folder.name,];
         }
 
         for(var i=0; i < pathParts.length; i++) {
@@ -222,17 +216,17 @@ class VideosMapper {
                 return null;
             }
 
-            currentParent = currentParent.folders[pathParts[i]]
+            currentParent = currentParent.folders[pathParts[i]];
         }
 
         return currentParent;
     }
 
     getEpisodes(showName, season) {
-        let uniqueList = {};
-        let folders = this.getRootFolders();
+        const uniqueList = {};
+        const folders = this.getRootFolders();
         for(var i =0; i<folders.length; i++) {
-            let folder = folders[i];
+            const folder = folders[i];
             if(folder.type == "TV") {
                 let currentEpisodes = [];
                 if(folder.index || this.oneTimePassNonWatchable) {

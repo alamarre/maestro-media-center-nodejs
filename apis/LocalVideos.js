@@ -1,7 +1,6 @@
 var fs = require("fs");
-var rangeStream = require('range-stream');
-var parseRange = require('range-parser');
-var sbuff = require('simple-bufferstream');
+var rangeStream = require("range-stream");
+var parseRange = require("range-parser");
 
 class VideosApi {
     constructor(storageProvider, router) {
@@ -14,23 +13,23 @@ class VideosApi {
         if (req.params[0]) {
             path += req.params[0];
         }
-        let listing = this.storageProvider.getRealPath(path);
-        let stat = fs.lstatSync(listing);
-        let stream = fs.createReadStream(listing);
+        const listing = this.storageProvider.getRealPath(path);
+        const stat = fs.lstatSync(listing);
+        const stream = fs.createReadStream(listing);
         this.sendSeekable(stream, "video/mp4", stat.size, req, res, next);
     }
     init() {
-        this.router.get('/:path*', this.get.bind(this));
+        this.router.get("/:path*", this.get.bind(this));
     }
     //taken from send-seekable 
     sendSeekable(stream, type, length, req, res, next) {
         // indicate this resource can be partially requested
-        res.set('Accept-Ranges', 'bytes');
+        res.set("Accept-Ranges", "bytes");
         // incorporate config
         if (length)
-            res.set('Content-Length', "" + length);
+            res.set("Content-Length", "" + length);
         if (type)
-            res.set('Content-Type', type);
+            res.set("Content-Type", type);
         // if this is a partial request
         if (req.headers.range) {
             // parse ranges
@@ -39,20 +38,20 @@ class VideosApi {
                 return res.sendStatus(400); // malformed range
             if (ranges === -1) {
                 // unsatisfiable range
-                res.set('Content-Range', '*/' + length);
+                res.set("Content-Range", "*/" + length);
                 return res.sendStatus(416);
             }
-            if (ranges.type !== 'bytes')
+            if (ranges.type !== "bytes")
                 return stream.pipe(res);
             if (ranges.length > 1) {
-                return next(new Error('send-seekable can only serve single ranges'));
+                return next(new Error("send-seekable can only serve single ranges"));
             }
             var start = ranges[0].start;
             var end = ranges[0].end;
             // formatting response
             res.status(206);
-            res.set('Content-Length', "" + (end - start + 1)); // end is inclusive
-            res.set('Content-Range', 'bytes ' + start + '-' + end + '/' + length);
+            res.set("Content-Length", "" + (end - start + 1)); // end is inclusive
+            res.set("Content-Range", "bytes " + start + "-" + end + "/" + length);
             // slicing the stream to partial content
             stream = stream.pipe(rangeStream(start, end));
         }

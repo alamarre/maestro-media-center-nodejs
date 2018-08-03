@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const crypto = require("crypto");
 
 class LocalLogin {
     constructor(db, userManager, router) {
@@ -7,28 +7,28 @@ class LocalLogin {
         this.db = db;
         this.userManager = userManager;
     }
-    get(req, res, next) {
+    get(req, res) {
         let tokenValue = req.headers["X-Maestro-User-Token".toLowerCase()];
         if (typeof tokenValue != "string") {
             tokenValue = req.query["access_token"];
         }
         if (typeof tokenValue != "string") {
-            res.status(401).json({ "status": "unauthenticated" });
+            res.status(401).json({ "status": "unauthenticated", });
         }
         else {
-            let token = tokenValue;
-            let username = this.userManager.getUsername(token);
+            const token = tokenValue;
+            const username = this.userManager.getUsername(token);
             if (username == null) {
-                res.status(403).json({ "status": "unauthorized" });
+                res.status(403).json({ "status": "unauthorized", });
             }
             else {
-                res.json({ "username": username });
+                res.json({ "username": username, });
             }
         }
     }
-    post(req, res, next) {
-        let login = this.login(req.body.username, req.body.password);
-        res.status(login == null ? 403 : 200).json({ "token": login });
+    post(req, res) {
+        const login = this.login(req.body.username, req.body.password);
+        res.status(login == null ? 403 : 200).json({ "token": login, });
     }
     validateAuth(req, res, next) {
         // skip if no auth needed
@@ -41,14 +41,14 @@ class LocalLogin {
             tokenValue = req.query["access_token"];
         }
         if (typeof tokenValue != "string") {
-            res.status(401).json({ "status": "unauthenticated" });
+            res.status(401).json({ "status": "unauthenticated", });
             return;
         }
         else {
-            let token = tokenValue;
-            let username = this.userManager.getUsername(token);
+            const token = tokenValue;
+            const username = this.userManager.getUsername(token);
             if (username == null) {
-                res.status(403).json({ "status": "unauthorized" });
+                res.status(403).json({ "status": "unauthorized", });
                 return;
             } else {
                 req.username = username;
@@ -58,14 +58,14 @@ class LocalLogin {
         next();
     }
     init() {
-        this.router.get('/', this.get.bind(this));
-        this.router.post('/', this.post.bind(this));
+        this.router.get("/", this.get.bind(this));
+        this.router.post("/", this.post.bind(this));
     }
     login(username, password) {
-        let hashPass = this.db.get("credentials", username);
+        const hashPass = this.db.get("credentials", username);
         if (hashPass != null) {
-            const hmac = crypto.createHash('sha256');
-            let hash = hmac.update(password).digest('hex');
+            const hmac = crypto.createHash("sha256");
+            const hash = hmac.update(password).digest("hex");
             if (hash == hashPass) {
                 return this.userManager.createAuthToken(username);
             }

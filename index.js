@@ -4,31 +4,31 @@ const Router = express.Router;
 const bodyParser = require("body-parser");
 const compression = require("compression");
 const http = require("http");
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 
 const LocalStorage =require("./impl/local/LocalStorage");
 const FileBasedDb  = require("./impl/local/FileBasedDb");
 const app = express();
 let port = 3000;
-let portString = process.env.PORT;
+const portString = process.env.PORT;
 if (portString) {
     port = parseInt(portString);
 }
 
 var cors = require("cors");
  
-app.use(cors())
+app.use(cors());
 
 app.set("port", port);
 app.use(compression());
 app.use(bodyParser.json());
-let db = new FileBasedDb("./db");
-let localStorage = new LocalStorage(db);
+const db = new FileBasedDb("./db");
+const localStorage = new LocalStorage(db);
 
 const SimplePasswordAuth = require("./impl/Local/SimplePasswordAuth");
 const LocalLogin = require("./apis/LocalLogin");
-let loginRouter = Router();
-let loginApi = new LocalLogin(db, new SimplePasswordAuth(db), loginRouter);
+const loginRouter = Router();
+const loginApi = new LocalLogin(db, new SimplePasswordAuth(db), loginRouter);
 app.use("/api/v1.0/login", loginRouter);
 app.use(loginApi.validateAuth.bind(loginApi));
 
@@ -39,47 +39,47 @@ const IpsApi = require("./apis/Ips");
 app.get("/api/v1.0/server/ips", IpsApi);
 
 const VideosMapper = require("./impl/VideosMapper");
-let videoMapper = new VideosMapper(db, localStorage, false , true);
+const videoMapper = new VideosMapper(db, localStorage, false , true);
 
-let filesRouter = Router();
+const filesRouter = Router();
 const FilesApi = require("./apis/Files");
-let filesApi = new FilesApi(videoMapper, filesRouter);
+new FilesApi(videoMapper, filesRouter);
 app.use("/api/v1.0/folders", filesRouter);
 
-let profileRouter = Router();
+const profileRouter = Router();
 const ProfilesApi = require("./apis/Profiles");
-let profilesApi = new ProfilesApi(db, profileRouter);
+new ProfilesApi(db, profileRouter);
 app.use("/api/v1.0/profiles", profileRouter);
 
-let videoRouter = Router();
+const videoRouter = Router();
 const VideosApi = require("./apis/LocalVideos");
-let videosApi = new VideosApi(localStorage, videoRouter);
+new VideosApi(localStorage, videoRouter);
 app.use("/videos", videoRouter);
 
 videoMapper.scanIndexedFolders();
 
-let tvRouter = Router();
+const tvRouter = Router();
 const TvShowsApi = require("./apis/TvShows");
-let tvShowsApi = new TvShowsApi(videoMapper, db, tvRouter);
+new TvShowsApi(videoMapper, db, tvRouter);
 app.use("/api/v1.0/shows", tvRouter);
 
 
-app.use(express.static('ui'));
+app.use(express.static("ui"));
 
 const server = http.createServer(app);
 
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, });
 
-let ids = {};
+const ids = {};
 
-wss.on('connection', function connection(ws, req) {
+wss.on("connection", function connection(ws) {
 
-  ws.on('close', () => {
+  ws.on("close", () => {
     if(ws.id) {
         delete ids[ws.id];
     }
   });
-  ws.on('message', function incoming(message) {
+  ws.on("message", function incoming(message) {
     message = JSON.parse(message);
     if(message.action == "setId") {
         if(ws.id) {
@@ -89,9 +89,9 @@ wss.on('connection', function connection(ws, req) {
         ws.id = message.id;
         ids[ws.id] = true;
 
-        for(let client of wss.clients) {
+        for(const client of wss.clients) {
             if (client.keepUpdating) {
-                client.send(JSON.stringify({"action": "list", ids: Object.keys(ids)}));
+                client.send(JSON.stringify({"action": "list", ids: Object.keys(ids),}));
             }
         }
     } else if(message.action == "deregister") {
@@ -109,13 +109,13 @@ wss.on('connection', function connection(ws, req) {
         if(message.keepUpdating) {
             ws.keepUpdating = true;
         }
-        ws.send(JSON.stringify({"action": "list", ids: Object.keys(ids)}));
+        ws.send(JSON.stringify({"action": "list", ids: Object.keys(ids),}));
     }
   });
 });
 
 server.listen(port, function listening() {
-  console.log('Listening on %d', server.address().port);
+  console.log("Listening on %d", server.address().port);
 });
 
 module.exports = app;

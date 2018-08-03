@@ -4,25 +4,25 @@ class FilesApi {
         this.init();
         this.storageProvider = storageProvider;
     }
-    get(req, res, next) {
-        let path = req.query.path;
-        let listing = this.storageProvider.listFolders(path);
+    get(req, res) {
+        const path = req.query.path;
+        const listing = this.storageProvider.listFolders(path);
         res.json(listing);
     }
 
-    getCache(req, res, next) {
-        let listing = this.storageProvider.getCache();
+    getCache(req, res) {
+        const listing = this.storageProvider.getCache();
         res.json(listing);
     }
 
-    getRootFolderInfo(req, res, next) {
-        let listing = this.storageProvider.getRootFolders();
+    getRootFolderInfo(req, res) {
+        const listing = this.storageProvider.getRootFolders();
         res.json(listing);
     }
     init() {
-        this.router.get('/', this.get.bind(this));
-        this.router.get('/cache', this.getCache.bind(this));
-        this.router.get('/root', this.getRootFolderInfo.bind(this));
+        this.router.get("/", this.get.bind(this));
+        this.router.get("/cache", this.getCache.bind(this));
+        this.router.get("/root", this.getRootFolderInfo.bind(this));
     }
 }
 

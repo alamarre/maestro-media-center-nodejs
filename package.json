@@ -6,6 +6,7 @@
   "author": "Al Lamarre <alamarre@gmail.com>",
   "license": "AGPL",
   "devDependencies": {
+    "eslint": "^5.2.0",
     "nodemon": "^1.11.0"
   },
   "scripts": {
