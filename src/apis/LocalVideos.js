@@ -14,9 +14,15 @@ class VideosApi {
             path += req.params[0];
         }
         const listing = this.storageProvider.getRealPath(path);
-        const stat = fs.lstatSync(listing);
-        const stream = fs.createReadStream(listing);
-        this.sendSeekable(stream, "video/mp4", stat.size, req, res, next);
+        
+        if(path.endsWith(".mp4")) {
+            const stat = fs.lstatSync(listing);
+            const stream = fs.createReadStream(listing);
+            this.sendSeekable(stream, "video/mp4", stat.size, req, res, next);
+        }else if(path.endsWith(".vtt")) {
+            res.type = "text/vtt";
+            res.sendFile(listing);
+        }
     }
     init() {
         this.router.get("/:path*", this.get.bind(this));
