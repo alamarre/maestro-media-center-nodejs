@@ -22,6 +22,7 @@ class TvShowsApi {
 
     postShowProgress(req, res) {
         const obj = req.body;
+        obj.lastUpdated = new Date().getTime();
         this.db.set(obj, "user_data", req.username, req.profile, "tv_shows_keep_watching", obj.show);
         res.send("OK");
     }

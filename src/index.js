@@ -71,6 +71,25 @@ const wss = new WebSocket.Server({ server, });
 
 const ids = {};
 
+const MetaDataManager = require("./metadata/MetadataManager");
+const BackgroundMetadataFetcher = require("./metadata/BackgroundMetadataFetcher");
+const metaDataManager = new MetaDataManager(db);
+
+const metadataRouter = Router();
+const MetadataApi = require("./apis/Metadata");
+new MetadataApi(metadataRouter, metaDataManager);
+app.use("/api/v1.0/metadata", metadataRouter);
+app.use("/metadata", metadataRouter);
+
+const TheMovieDb = require("./metadata/TheMovieDb");
+const theMovieDb = new TheMovieDb();
+if(theMovieDb.canRun()) {
+    const backgroundMetadataFetcher = new BackgroundMetadataFetcher(videoMapper, metaDataManager, theMovieDb, db);
+    backgroundMetadataFetcher.fetch().catch(e => {
+        console.error(e);
+    });
+}
+
 wss.on("connection", function connection(ws) {
 
   ws.on("close", () => {

@@ -1,4 +1,8 @@
 const fs = require("fs");
+const EventEmitter = require("events");
+
+class VideoEmitter extends EventEmitter {}
+const videoEmitter = new VideoEmitter();
 
 class VideosMapper {
     constructor(db, storageProvider, allowNonCachedTvShows, oneTimePassNonWatchable) {
@@ -20,6 +24,10 @@ class VideosMapper {
     getRootFolders() {
         const rootFolders = this.storageProvider.getRootFolders();
         return rootFolders;
+    }
+
+    listenForChanges(f) {
+        videoEmitter.on("newFile", (rootFolderName, relativePath) => f(rootFolderName, relativePath));
     }
 
     scanIndexedFolders() {
@@ -130,6 +138,9 @@ class VideosMapper {
         const parent = this.getParent(rootFolderName, relativePath);
 
         const pathParts = relativePath.split("/");
+        if(!parent.files[pathParts[pathParts.length -1]]) {
+            videoEmitter.emit("newFile", rootFolderName, relativePath);
+        }
         parent.files[pathParts[pathParts.length -1]] = relativePath;
     }
 
@@ -170,6 +181,35 @@ class VideosMapper {
         }
 
         return Object.keys(uniqueList);
+    }
+
+    getMovies() {
+        const uniqueList = [];
+        const folders = this.getRootFolders();
+        const queue = [];
+
+        const folderHandler = (rootFolder, relativePath, contents) => {
+            for(const folder in contents.folders) {
+                queue.push({rootFolder, relativePath: `${relativePath}/${folder}`, contents: contents.folders[folder],});
+            }
+
+            for(const file in contents.files) {
+                if(file.endsWith(".mp4")) {
+                    uniqueList.push({rootFolder, relativePath: `${relativePath}/${file}`,});
+                }
+            }
+        };
+        for(let i =0; i<folders.length; i++) {
+            if(folders[i].type !== "TV") {
+                folderHandler(folders[i], "", this.getCachedListing(folders[i], ""));
+            }
+        }
+        while(queue.length > 0) {
+            const {rootFolder, relativePath, contents,} = queue.pop();
+            folderHandler(rootFolder, relativePath, contents);
+        }
+
+        return uniqueList;
     }
 
     getSeasons(showName) {
