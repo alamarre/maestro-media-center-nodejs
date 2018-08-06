@@ -90,6 +90,10 @@ if(theMovieDb.canRun()) {
     });
 }
 
+const LocalSessionCleaner = require("./scripts/LocalSessionCleaner");
+const localSessionCleaner = new LocalSessionCleaner();
+localSessionCleaner.run();
+
 wss.on("connection", function connection(ws) {
 
   ws.on("close", () => {
