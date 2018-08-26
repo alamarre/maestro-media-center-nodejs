@@ -66,7 +66,7 @@ class LocalLogin {
         if (hashPass != null) {
             const hmac = crypto.createHash("sha256");
             const hash = hmac.update(password).digest("hex");
-            if (hash == hashPass) {
+            if (hash.toLowerCase() == hashPass.toLowerCase()) {
                 return this.userManager.createAuthToken(username);
             }
         }

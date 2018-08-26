@@ -16,6 +16,11 @@ class MetadataApi {
             if(fs.existsSync(showFile)) {
                 imagePath = showFile;
             }
+        } else if(req.query.collectionName) {
+            const movieFile = `./images/collections/${req.query.collectionName}.jpg`;
+            if(fs.existsSync(movieFile)) {
+                imagePath = movieFile;
+            }
         } else {
             const movieName = this.metadataProvider.getMovienameFromPath(filePath);
             const movieFile = `./images/movies/${movieName}.jpg`;

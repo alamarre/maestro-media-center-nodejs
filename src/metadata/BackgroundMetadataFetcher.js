@@ -85,6 +85,26 @@ class BackgroundMetadataFetcher {
                     });
                 });
             }
+
+            if(metadata.collectionInfo && metadata.collectionInfo.poster) {
+                const res = await fetch(metadata.collectionInfo.poster);
+                const file = `./images/collections/${metadata.collectionInfo.collectionName}.jpg`;
+                const parentDir = path.dirname(file);
+                mkdirp.sync(parentDir);
+                await new Promise((resolve, reject) => {
+                    const dest = fs.createWriteStream(file);
+                    res.body.pipe(dest);
+                    res.body.on("error", err => {
+                        reject(err);
+                    });
+                    dest.on("finish", () => {
+                        resolve();
+                    });
+                    dest.on("error", err => {
+                        reject(err);
+                    });
+                });
+            }
             this.metadataManager.saveMovieMetadata(movieName, metadata);
         }
     }
