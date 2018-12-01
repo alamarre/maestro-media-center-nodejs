@@ -7,55 +7,61 @@ class LocalLogin {
         this.db = db;
         this.userManager = userManager;
     }
-    get(req, res) {
-        let tokenValue = req.headers["X-Maestro-User-Token".toLowerCase()];
+    async get(ctx) {
+        let tokenValue = ctx.headers["X-Maestro-User-Token".toLowerCase()];
         if (typeof tokenValue != "string") {
-            tokenValue = req.query["access_token"];
+            tokenValue = ctx.query["access_token"];
         }
         if (typeof tokenValue != "string") {
-            res.status(401).json({ "status": "unauthenticated", });
+            ctx.status =401;
+            ctx.body = JSON.stringify({ "status": "unauthenticated", });
         }
         else {
             const token = tokenValue;
             const username = this.userManager.getUsername(token);
             if (username == null) {
-                res.status(403).json({ "status": "unauthorized", });
+                ctx.status =403;
+                ctx.body = JSON.stringify({ "status": "unauthorized", });
             }
             else {
-                res.json({ "username": username, });
+                ctx.body = JSON.stringify({ "username": username, });
             }
         }
     }
-    post(req, res) {
-        const login = this.login(req.body.username, req.body.password);
-        res.status(login == null ? 403 : 200).json({ "token": login, });
+    async post(ctx) {
+        const {username, password,} = ctx.request.body;
+        const login = this.login(username, password);
+        ctx.state = login == null ? 403 : 200;
+        ctx.body = JSON.stringify({ "token": login, });
     }
-    validateAuth(req, res, next) {
+    async validateAuth(ctx, next) {
         // skip if no auth needed
-        if (req.path == "/api/v1.0/login" || !req.path.startsWith("/api")) {
-            next();
+        if (ctx.path == "/api/v1.0/login" || !ctx.path.startsWith("/api")) {
+            await next();
             return;
         }
-        let tokenValue = req.headers["X-Maestro-User-Token".toLowerCase()];
+        let tokenValue = ctx.headers["X-Maestro-User-Token".toLowerCase()];
         if (typeof tokenValue != "string") {
-            tokenValue = req.query["access_token"];
+            tokenValue = ctx.query["access_token"];
         }
         if (typeof tokenValue != "string") {
-            res.status(401).json({ "status": "unauthenticated", });
+            ctx.status = 401;
+            ctx.body = JSON.stringify({ "status": "unauthenticated", });
             return;
         }
         else {
             const token = tokenValue;
             const username = this.userManager.getUsername(token);
             if (username == null) {
-                res.status(403).json({ "status": "unauthorized", });
+                ctx.status = 403;
+                ctx.body = JSON.stringify({ "status": "unauthorized", });
                 return;
             } else {
-                req.username = username;
-                req.profile = req.query["profile"];
+                ctx.username = username;
+                ctx.profile = ctx.query["profile"];
             }
         }
-        next();
+        await next();
     }
     init() {
         this.router.get("/", this.get.bind(this));

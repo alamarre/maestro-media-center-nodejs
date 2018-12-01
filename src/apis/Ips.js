@@ -11,7 +11,7 @@ Object.keys(ifaces).forEach(function (ifname) {
     });
 });
 addresses.push("127.0.0.1");
-exports.ip = (req, res) => {
-    res.json(addresses);
+exports.ip = (ctx) => {
+    ctx.body = (addresses);
 };
 module.exports=exports.ip;

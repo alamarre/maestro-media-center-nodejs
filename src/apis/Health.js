@@ -1,6 +1,5 @@
-const health = (req, res) => {
-    console.log(req.client.remoteAddress);
-    res.json({ "errors": "0", "clientIp": req.client.remoteAddress,});
+const health = (ctx) => {
+    ctx.body = ({ "errors": "0", "clientIp": ctx.ip,});
 };
 
 module.exports=health;

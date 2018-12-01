@@ -4,15 +4,15 @@ class CollectionsApi {
         this.init();
         this.db = db;
     }
-    list(req, res) {
+    async list(ctx) {
         const listing = this.db.list("collections");
-        res.json(listing);
+        ctx.body = (listing);
     }
 
-    get(req, res) {
-        const { collection, } = req.params;
+    async get(ctx) {
+        const { collection, } = ctx.params;
         const collectionInfo = this.db.get("collections", collection);
-        res.json(collectionInfo);
+        ctx.body = (collectionInfo);
     }
 
     init() {

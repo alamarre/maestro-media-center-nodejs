@@ -7,17 +7,17 @@ class MetadataApi {
         this.metadataProvider = metadataProvider;
         this.init();
     }
-    getImage(req, res) {
-        const filePath = req.query.path;
-        const showName = req.query.showName;
+    async getImage(ctx) {
+        const filePath = ctx.query.path;
+        const showName = ctx.query.showName;
         let imagePath = "./images/nopicture.png";
         if(showName) {
             const showFile = `./images/tv/show/${showName}.jpg`;
             if(fs.existsSync(showFile)) {
                 imagePath = showFile;
             }
-        } else if(req.query.collectionName) {
-            const movieFile = `./images/collections/${req.query.collectionName}.jpg`;
+        } else if(ctx.query.collectionName) {
+            const movieFile = `./images/collections/${ctx.query.collectionName}.jpg`;
             if(fs.existsSync(movieFile)) {
                 imagePath = movieFile;
             }
@@ -28,7 +28,10 @@ class MetadataApi {
                 imagePath = movieFile;
             }
         }
-        res.sendFile(imagePath, { root: path.join(__dirname, "../../"), });
+        const realImagePath = (path.join(__dirname, `../../${imagePath}`));
+        if(fs.existsSync(realImagePath)) {
+            ctx.body = fs.createReadStream(realImagePath);
+        }
     }
 
     init() {

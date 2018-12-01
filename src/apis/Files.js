@@ -5,23 +5,27 @@ class FilesApi {
         this.storageProvider = storageProvider;
         this.db = db;
     }
-    get(req, res) {
-        const path = req.query.path;
-        const listing = this.storageProvider.listFolders(path);
-        res.json(listing);
+    async get(ctx) {
+        const path = ctx.query.path;
+        const listing = await this.storageProvider.listFolders(path);
+        ctx.body = (listing);
     }
 
-    getCache(req, res) {
-        const listing = this.storageProvider.getCache();
-        listing.folders["Movie Collections"] = {folders: [], files: this.db.list("collections").map(c => c.collectionName),};
-        res.json(listing);
+    async getCache(ctx) {
+        const listing = await this.storageProvider.getCache();
+        listing.folders["Movie Collections"] = {folders: [], files: await this.db.list("collections").map(c => c.collectionName),};
+        ctx.body = (listing);
     }
 
-    getRootFolderInfo(req, res) {
-        const listing = this.storageProvider.getRootFolders();
+    async getRootFolderInfo(ctx) {
+        const listing = await this.storageProvider.getRootFolders();
         const newListing = listing.map(l =>l);
         newListing.push({"name": "Movie Collections", "type": "collection", path: "",});
-        res.json(newListing);
+        ctx.body = (newListing);
+    }
+
+    async getVideoSources() {
+        
     }
     init() {
         this.router.get("/", this.get.bind(this));
