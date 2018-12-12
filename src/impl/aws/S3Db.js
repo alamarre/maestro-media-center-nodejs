@@ -4,7 +4,6 @@ class S3Db {
         this.bucket = bucket;
     }
     getKey(pathParts) {
-        pathParts.unshift(this.rootPath);
         const path = pathParts.join("/");
         return path;
     }
@@ -31,6 +30,26 @@ class S3Db {
         }).promise();
     }
 
+    async addToStringSet(value, column, ...pathParams) {
+        const file = this.getKey(pathParams) + ".json";
+        let obj = {};
+        try {
+			const result = await this.s3.getObject({
+				Bucket: this.bucket,
+				Key: file,
+			}).promise();
+			obj = JSON.parse(result.Body);
+		} catch (e) {
+            obj[column] = value;
+        }
+
+        await this.s3.putObject({
+            Bucket: this.bucket,
+            Key: file,
+            Body: JSON.stringify(value),
+        }).promise();
+    }
+
     async list(...prefix) {
         const directory = this.getKey(prefix);
         const result = await this.s3.listObjectsV2({
@@ -38,7 +57,7 @@ class S3Db {
             Prefix: directory,
         }).promise();
 
-        const fileData = Promise.all(result.Contents.map(async f => {
+        const fileData = await Promise.all(result.Contents.map(async f => {
             const data = await this.s3.getObject({
 				Bucket: this.bucket,
 				Key: f.Key,

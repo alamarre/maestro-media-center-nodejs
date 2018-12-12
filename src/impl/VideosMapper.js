@@ -11,6 +11,7 @@ class VideosMapper {
         this.cachedFolders = { "files": {}, "folders": {}, };
         this.allowNonCachedTvShows = allowNonCachedTvShows;
         this.oneTimePassNonWatchable = oneTimePassNonWatchable;
+        this.scanned = false;
     }
 
     loadCache() {
@@ -26,8 +27,22 @@ class VideosMapper {
         return rootFolders;
     }
 
+    async getVideoSources(path) {
+        const subtitles = [];
+        const vttFileName = path.replace(".mp4", ".vtt");
+        if(fs.existsSync(this.storageProvider.getRealPath(vttFileName))) {
+            subtitles.push(`/videos/${vttFileName}`);
+        }
+        return {
+            videos: [
+                `/videos/${path}`,
+            ],
+            subtitles,
+        };
+    }
+
     listenForChanges(f) {
-        videoEmitter.on("newFile", (rootFolderName, relativePath) => f(rootFolderName, relativePath));
+        videoEmitter.on("newFile", (rootFolderName, relativePath, scanned) => f(rootFolderName, relativePath, scanned));
     }
 
     scanIndexedFolders() {
@@ -46,6 +61,7 @@ class VideosMapper {
                 this.scanFoldersUsingQueue(folder);
             }
         }
+        this.scanned = true;
     }
 
     listFolders(path) {
@@ -139,10 +155,10 @@ class VideosMapper {
 
         const pathParts = relativePath.split("/");
         if (!parent.files[pathParts[pathParts.length - 1]]) {
-            videoEmitter.emit("newFile", rootFolderName, relativePath);
+            videoEmitter.emit("newFile", rootFolderName, relativePath, this.scanned);
         }
         parent.files[pathParts[pathParts.length - 1]] = relativePath;
-    }
+    } 
 
     getParent(rootFolderName, relativePath) {
         if (relativePath.indexOf("/") == 0) {

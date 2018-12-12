@@ -14,7 +14,7 @@ class BackgroundMetadataFetcher {
         const rootFolders = this.cache.getRootFolders();
         this.cache.listenForChanges(async (rootFolderName, relativePath) => {
             const rootFolder = rootFolders.filter(r => r.name === rootFolderName)[0];
-            const folderType = (rootFolder.type || "movies").toLowerCase();
+            const folderType = (rootFolder.type || "movie").toLowerCase();
             if(folderType === "tv") {
                 const showName = relativePath.split("/")[0];
                 await this.addTvShow(showName);

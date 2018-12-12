@@ -69,6 +69,10 @@ app.use(playlistRouter.allowedMethods());
 
 videoMapper.scanIndexedFolders();
 
+const RemoteUpdater = require("./impl/local/RemoteUpdater");
+const remoteUpdater = new RemoteUpdater(videoMapper);
+remoteUpdater.listen();
+
 const tvRouter = new Router({prefix: "/api/v1.0/shows",});
 const TvShowsApi = require("./apis/TvShows");
 new TvShowsApi(db, tvRouter);

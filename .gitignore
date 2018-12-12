@@ -63,3 +63,8 @@ typings/
 ui
 build
 images/
+
+.DS_Store
+*.zip
+*.tfplan
+.terraform

@@ -2,7 +2,7 @@ function addToCache(cache, ...parts) {
     let current = cache;
     for(const index in parts) {
         const part = parts[index];
-        if(index === parts.length -1) {
+        if(index == parts.length -1) {
             current.files[part] = part;
         } else {
             if(!current.folders[part]) {
@@ -20,6 +20,28 @@ class S3CacheManager {
         this.db = db;
     }
 
+    async buildAndStoreCache() {
+        const cache = await this.buildCache();
+        await this.storeCache(cache);
+    }
+
+    async storeCache(cache) {
+        await this.db.set(cache, "video","cache");
+    }
+
+    async addMovieToCache(movieName) {
+        const cache = await this.db.get("video","cache");
+        cache.folders["Movies"].files[movieName] = movieName;
+        await this.db.set(cache, "video","cache");
+    }
+
+    async addEpisodeToCache(show, season, episode) {
+        const cache = await this.db.get("video","cache");
+        const current = cache.folders["TV Shows"];
+        addToCache(current, show, season, episode);
+        await this.db.set(cache, "video","cache");
+    }
+
     async buildCache() {
         // AWS cache rule, no nested folders for movies, tv shows are Show Name -> Season -> Episode
         this.root = {files: {}, folders: {"Movies":{files: {}, folders: {},}, "TV Shows": {files:{}, folders: {},},},};
@@ -28,7 +50,7 @@ class S3CacheManager {
         }).promise();
 
         while(results.Contents.length > 0) {
-            for(const file in results.Contents ) {
+            for(const file of results.Contents ) {
                 const key = file.Key;
                 const parts = key.split("/");
                 if(parts.length < 2) {
@@ -39,7 +61,7 @@ class S3CacheManager {
                 const folder = parts[0];
                 let fileName = parts[1];
  
-                if(!this.root[folder]) {
+                if(!this.root.folders[folder]) {
                     console.error(`${folder} is not considered a valid folder. Unacceptable.`);
                     continue;
                 }
@@ -49,14 +71,13 @@ class S3CacheManager {
                     const season = parts[2];
                     let episode = parts[3];
                     episode = episode.substring(0, episode.indexOf(".json"));
-                    const current = this.root["TV Shows"];
-                    addToCache(current, [show, season, episode,]);
+                    const current = this.root.folders["TV Shows"];
+                    addToCache(current, show, season, episode);
                     
                 } else if(parts.length === 2) {
                     fileName = fileName.substring(0, fileName.indexOf(".json"));
-                    this.root[folder][fileName] = fileName;
+                    this.root.folders[folder].files[fileName] = fileName;
                 }
-
             }
             results = await this.s3.listObjectsV2({
                 Bucket: this.bucket,
