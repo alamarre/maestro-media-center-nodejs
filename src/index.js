@@ -25,11 +25,13 @@ const localStorage = new LocalStorage(db);
 
 const SimplePasswordAuth = require("./impl/local/SimplePasswordAuth");
 const LocalLogin = require("./apis/LocalLogin");
-const loginRouter = Router("/api/v1.0/login");
+const loginRouter = Router({prefix: "/api/v1.0/login",});
 const loginApi = new LocalLogin(db, new SimplePasswordAuth(db), loginRouter);
 app.use(async (ctx, next) => { 
     await loginApi.validateAuth(ctx, next);
 });
+app.use(loginRouter.routes());
+app.use(loginRouter.allowedMethods());
 
 const healthApi = require("./apis/Health");
 defaultRouter.get("/health", healthApi);
