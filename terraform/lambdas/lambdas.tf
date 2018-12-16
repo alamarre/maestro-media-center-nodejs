@@ -23,11 +23,24 @@ data "archive_file" "import_lambda_zip" {
     output_path = "${path.module}/import_lambda.zip"
 }
 
+resource "aws_s3_bucket" "deployment_bucket" {
+  bucket = "${var.deployment_bucket}"
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_object" "object" {
+  bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  key    = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  source = "${data.archive_file.import_lambda_zip.output_path}"
+  etag   = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+}
+
 resource "aws_lambda_function" "maintain_cache" {
   function_name    = "maestro_maintain_cache"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
   handler          = "src/lambdas/MaintainCache.handler"
-  filename         = "${data.archive_file.import_lambda_zip.output_path}"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
   source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
   runtime          = "nodejs8.10"
   timeout = "15"
@@ -40,11 +53,32 @@ resource "aws_lambda_function" "maintain_cache" {
   }
 }
 
+resource "aws_lambda_function" "fetch_metadata" {
+  function_name    = "maestro_fetch_metadata_from_dynamo_stream"
+  role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
+  handler          = "src/lambdas/FetchMetadata.handler"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
+  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  runtime          = "nodejs8.10"
+  timeout = "15"
+  memory_size = "512"
+
+  environment {
+    variables = {
+      DB_BUCKET = "${var.db_bucket}",
+      IMAGE_BUCKET = "${var.image_bucket}",
+      TMDB_KEY = "${var.tmdb_key}"
+    }
+  }
+}
+
 resource "aws_lambda_function" "rebuild_cache" {
   function_name    = "maestro_rebuild_cache"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
   handler          = "src/lambdas/RebuildCache.handler"
-  filename         = "${data.archive_file.import_lambda_zip.output_path}"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
   source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
   runtime          = "nodejs8.10"
   timeout = "180"
@@ -62,7 +96,8 @@ resource "aws_lambda_function" "import_to_s3" {
   function_name    = "import_cache_to_s3"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
   handler          = "src/lambdas/import.handler"
-  filename         = "${data.archive_file.import_lambda_zip.output_path}"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
   source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
   runtime          = "nodejs8.10"
   timeout = "900"
@@ -82,7 +117,8 @@ resource "aws_lambda_function" "maestro_web" {
   function_name    = "maestro-web"
   role             = "arn:aws:iam::990455710365:role/maestro-lambda"
   handler          = "src/lambda.handler"
-  filename         = "${data.archive_file.import_lambda_zip.output_path}"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
   source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
   runtime          = "nodejs8.10"
   timeout = "20"

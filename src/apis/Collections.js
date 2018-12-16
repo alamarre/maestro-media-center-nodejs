@@ -5,13 +5,13 @@ class CollectionsApi {
         this.db = db;
     }
     async list(ctx) {
-        const listing = this.db.list("collections");
+        const listing = await this.db.list("collections");
         ctx.body = (listing);
     }
 
     async get(ctx) {
         const { collection, } = ctx.params;
-        const collectionInfo = this.db.get("collections", collection);
+        const collectionInfo = await this.db.get("collections", collection);
         ctx.body = (collectionInfo);
     }
 

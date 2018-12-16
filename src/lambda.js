@@ -24,11 +24,14 @@ const db = new S3Db(s3, process.env.DB_BUCKET);
 
 const SimplePasswordAuth = require("./impl/local/SimplePasswordAuth");
 const LocalLogin = require("./apis/LocalLogin");
-const loginRouter = Router("/api/v1.0/login");
+const loginRouter = Router({prefix: "/api/v1.0/login",});
 const loginApi = new LocalLogin(db, new SimplePasswordAuth(db), loginRouter);
 app.use(async (ctx, next) => { 
     await loginApi.validateAuth(ctx, next);
 });
+app.use(loginRouter.routes());
+app.use(loginRouter.allowedMethods());
+
 
 const healthApi = require("./apis/Health");
 defaultRouter.get("/health", healthApi);
@@ -95,7 +98,7 @@ app.use(videosRouter.allowedMethods());
 const MetaDataManager = require("./metadata/MetadataManager");
 const metaDataManager = new MetaDataManager(db);
 
-const metadataRouter = new Router({prefix: "/metadata",});
+const metadataRouter = new Router({prefix: "/api/v1.0/metadata",});
 const MetadataApi = require("./apis/Metadata");
 new MetadataApi(metadataRouter, metaDataManager);
 app.use(metadataRouter.routes());

@@ -34,8 +34,46 @@ class MetadataApi {
         }
     }
 
+    async getMovieMetadata(ctx) {
+        const result = await this.metadataProvider.getMovieMetadata(ctx.params.movieName);
+        if(!result) {
+            ctx.status = 404;
+        }
+        ctx.body = result;
+    }
+
+    async getTvShowMetadata(ctx) {
+        const result = await this.metadataProvider.getTvShowMetadata(ctx.params.show);
+        if(!result) {
+            ctx.status = 404;
+        }
+        ctx.body = result;
+    }
+
+    async getTvSeasonMetadata(ctx) {
+        const result = await this.metadataProvider.getTvSeasonMetadata(ctx.params.show, ctx.params.season);
+        if(!result) {
+            ctx.status = 404;
+        }
+        ctx.body = result;
+    }
+
+    async getTvEpisodeMetadata(ctx) {
+        const {show, season, episode,} = ctx.params;
+        const result = await this.metadataProvider.getTvEpisodeMetadata(show, season, episode);
+        if(!result) {
+            ctx.status = 404;
+        }
+        ctx.body = result;
+    }
+    
+
     init() {
         this.router.get("/image", this.getImage.bind(this));
+        this.router.get("/movie/:movieName", this.getMovieMetadata.bind(this));
+        this.router.get("/tv/:show", this.getTvShowMetadata.bind(this));
+        this.router.get("/tv/:show/:season", this.getTvSeasonMetadata.bind(this));
+        this.router.get("/tv/:show/:season/:episode", this.getTvEpisodeMetadata.bind(this));
     }
 }
 

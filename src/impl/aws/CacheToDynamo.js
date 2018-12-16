@@ -11,9 +11,34 @@ function mapCacheToPath(cache, currentPath, map, useFull) {
     }
 }
 
+function hasMovie(cache, movieName) {
+    movieName = movieName.substring(0, movieName.lastIndexOf("."));
+    return (cache && cache.folders && (typeof cache.folders["Movies"].files[movieName]) !== "undefined");
+}
+
+function hasTvEpisode(cache, show, season, episode) {
+    if(!cache) {
+        return false;
+    }
+
+    const showFolder = cache.folders["TV Shows"].folders[show];
+    if(!showFolder) {
+        return false;
+    }
+
+    const seasonFolder = showFolder.folders[season];
+    if(!seasonFolder) {
+        return false;
+    }
+
+    episode = episode.substring(0, episode.lastIndexOf("."));
+    return (typeof seasonFolder.files[episode]) !== "undefined";
+}
+
 class CacheToDynamo {
-    constructor(db) {
+    constructor(db, referenceCache) {
         this.db = db;
+        this.referenceCache = referenceCache;
     }
 
     async addCache(cache, rootFolders, rootUrl) {
@@ -22,15 +47,22 @@ class CacheToDynamo {
             if(type === "movies") {
                 const movies = {};
                 mapCacheToPath(cache.folders[rootFolder.name], "", movies, false);
-                for(const movie of Object.keys(movies)) {                  
-                    await this.addMovie(movie, `${rootUrl}${rootFolder.name}${movies[movie]}`);
+                for(const movie of Object.keys(movies)) {
+                    if(!hasMovie(this.referenceCache, movie)) {
+                        await this.addMovie(movie, `${rootUrl}${rootFolder.name}${movies[movie]}`);
+                    }
                 }
             } else if(type === "tv") {
                 const shows = {};
                 mapCacheToPath(cache.folders[rootFolder.name], "", shows, true);
                 for(const show of Object.keys(shows)) {
                     const [, showName, season, episode,] = show.split("/");
-                    await this.addEpisode(showName, season, episode, `${rootUrl}${rootFolder.name}${show}`);
+                    if(showName.startsWith("Avatar") && season === "Season 3") {
+                        console.log(episode);
+                    }
+                    if(!hasTvEpisode(this.referenceCache, showName, season, episode)) {
+                        await this.addEpisode(showName, season, episode, `${rootUrl}${rootFolder.name}${show}`);
+                    }
                 }
             }
         }

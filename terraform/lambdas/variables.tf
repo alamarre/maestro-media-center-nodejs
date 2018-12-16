@@ -6,6 +6,17 @@ variable db_bucket {
     default = "db.videos.omny.ca"
 }
 
+variable image_bucket {
+    default = "show-images.omny.ca"
+}
+
+variable tmdb_key {
+    type ="string"
+}
+
+variable deployment_bucket {
+    default = "lambda-deployments.omny.ca"
+}
 variable access_token {
     type = "string"
 }

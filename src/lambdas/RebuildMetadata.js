@@ -1,7 +1,7 @@
-const cacheRebuilder = require("../impl/aws/CacheRebuilder");
+const metaDataRebuilder = require("../impl/aws/MetadataRebuilder");
 
 exports.handler = async () => {
-    await cacheRebuilder();
+    await metaDataRebuilder();
 };
 
 if(process.env.RUN_LOCAL) {

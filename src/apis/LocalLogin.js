@@ -18,7 +18,7 @@ class LocalLogin {
         }
         else {
             const token = tokenValue;
-            const username = this.userManager.getUsername(token);
+            const username = await this.userManager.getUsername(token);
             if (username == null) {
                 ctx.status =403;
                 ctx.body = JSON.stringify({ "status": "unauthorized", });
@@ -30,7 +30,7 @@ class LocalLogin {
     }
     async post(ctx) {
         const {username, password,} = ctx.request.body;
-        const login = this.login(username, password);
+        const login = await this.login(username, password);
         ctx.state = login == null ? 403 : 200;
         ctx.body = JSON.stringify({ "token": login, });
     }
@@ -51,7 +51,7 @@ class LocalLogin {
         }
         else {
             const token = tokenValue;
-            const username = this.userManager.getUsername(token);
+            const username = await this.userManager.getUsername(token);
             if (username == null) {
                 ctx.status = 403;
                 ctx.body = JSON.stringify({ "status": "unauthorized", });
@@ -67,8 +67,8 @@ class LocalLogin {
         this.router.get("/", this.get.bind(this));
         this.router.post("/", this.post.bind(this));
     }
-    login(username, password) {
-        const hashPass = this.db.get("credentials", username);
+    async login(username, password) {
+        const hashPass = await this.db.get("credentials", username);
         if (hashPass != null) {
             const hmac = crypto.createHash("sha256");
             const hash = hmac.update(password).digest("hex");

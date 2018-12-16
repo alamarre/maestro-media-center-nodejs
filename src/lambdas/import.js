@@ -13,15 +13,15 @@ const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
 const CacheToDynamo = require("../impl/aws/CacheToDynamo");
 const DynamoDb = require("../impl/aws/DynamoDb");
 const db = new DynamoDb(dynamoClient, DYNAMO_TABLE);
-const cacheToDynamo = new CacheToDynamo(db);
 
-/*const s3 = new AWS.S3();
-const S3CacheManager = require("../impl/aws/S3CacheManager");
-const CacheToS3 = require("../impl/aws/CacheToS3");
+
+const s3 = new AWS.S3();
+//const S3CacheManager = require("../impl/aws/S3CacheManager");
+//const CacheToS3 = require("../impl/aws/CacheToS3");
 const S3Db = require("../impl/aws/S3Db");
-const db = new S3Db(s3, process.env.DB_BUCKET);
-const cacheToS3 = new CacheToS3(s3, process.env.BUCKET);
-const s3CacheManager = new S3CacheManager({s3, bucket: process.env.BUCKET, db,});*/
+const s3Db = new S3Db(s3, process.env.DB_BUCKET);
+/*const cacheToS3 = new CacheToS3(s3Db, process.env.BUCKET);
+const s3CacheManager = new S3CacheManager({s3, bucket: process.env.BUCKET, s3Db,});*/
 
 async function run() {
     const queryString = `?access_token=${ACCESS_TOKEN}`;
@@ -31,6 +31,8 @@ async function run() {
 
     const rootFoldersResponse = await fetch(`${SERVER}/api/v1.0/folders/root${queryString}`);
     const rootFolders = await rootFoldersResponse.json();
+    const currentCache = await s3Db.get("video", "cache");
+    const cacheToDynamo = new CacheToDynamo(db, currentCache);
     await cacheToDynamo.addCache(cache, rootFolders, BASE_VIDEO_URL);
     //await cacheToS3.addCache(cache, rootFolders, BASE_VIDEO_URL);
 

@@ -57,5 +57,5 @@ module.exports = async () => {
     }
 
     console.log("cached items", count);
-    db.set(cache, "video", "cache");
+    await db.set(cache, "video", "cache");
 };

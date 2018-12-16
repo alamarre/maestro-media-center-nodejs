@@ -7,6 +7,14 @@ class MetadataManager {
         return this.db.get("metadata", "tv", "show", showName);
     }
 
+    getTvSeasonMetadata(showName, season) {
+        return this.db.list("metadata", "tv", "episode", showName, season);
+    }
+
+    getTvEpisodeMetadata(showName, season, episode) {
+        return this.db.get("metadata", "tv", "episode", showName, season, episode);
+    }
+
     getMovieMetadata(movieName) {
         return this.db.get("metadata", "movie", movieName);
     }
@@ -18,12 +26,16 @@ class MetadataManager {
         return movieName;
     }
 
-    saveMovieMetadata(movieName, metadata) {
-        this.db.set(metadata, "metadata", "movie", movieName);
+    async saveMovieMetadata(movieName, metadata) {
+        await this.db.set(metadata, "metadata", "movie", movieName);
     }
 
-    saveTvShowMetadata(showName, metadata) {
-        this.db.set(metadata, "metadata", "tv", "show", showName);
+    async saveTvShowMetadata(showName, metadata) {
+        await this.db.set(metadata, "metadata", "tv", "show", showName);
+    }
+
+    async saveTvEpisodeMetadata(showName, season, episode, metadata) {
+        await this.db.set(metadata, "metadata", "tv", "episode", showName, season, episode);
     }
 }
 
