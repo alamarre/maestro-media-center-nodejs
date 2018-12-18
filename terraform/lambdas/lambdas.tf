@@ -53,6 +53,24 @@ resource "aws_lambda_function" "maintain_cache" {
   }
 }
 
+resource "aws_lambda_function" "vide_added_time" {
+  function_name    = "maestro_video_added_time"
+  role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
+  handler          = "src/lambdas/NewVideoTimeAdded.handler"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
+  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  runtime          = "nodejs8.10"
+  timeout = "15"
+  memory_size = "512"
+
+  environment {
+    variables = {
+      DB_BUCKET = "${var.db_bucket}"
+    }
+  }
+}
+
 resource "aws_lambda_function" "fetch_metadata" {
   function_name    = "maestro_fetch_metadata_from_dynamo_stream"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"

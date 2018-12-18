@@ -1,8 +1,14 @@
 class VideosApi {
-    constructor(router, cacheManager) {
+    constructor(router, cacheManager, db) {
         this.router = router;
         this.init();
         this.cacheManager = cacheManager;
+        this.db = db;
+    }
+
+    async getRecentVideos(ctx) {
+        const result = await this.db.list("movie_added");
+        ctx.body = result;
     }
 
     async addVideo(ctx) {
@@ -28,6 +34,7 @@ class VideosApi {
     
     init() {
         this.router.post("/source", this.addVideo.bind(this));
+        this.router.get("/recent", this.getRecentVideos.bind(this));
     }
 }
 

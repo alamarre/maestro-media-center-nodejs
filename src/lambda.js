@@ -91,7 +91,7 @@ const s3AndCacheManager = new S3AndCacheManager(s3CacheManager, cacheToS3);*/
 
 const videosRouter = new Router({prefix: "/api/v1.0/videos",});
 const VideosApi = require("./apis/Videos");
-new VideosApi(videosRouter, cacheToDynamo);
+new VideosApi(videosRouter, cacheToDynamo, db);
 app.use(videosRouter.routes());
 app.use(videosRouter.allowedMethods());
 
