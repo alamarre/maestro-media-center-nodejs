@@ -1,4 +1,6 @@
 const http = require("http");
+const als = require("async-local-storage");
+als.enable();
 
 const Koa = require("koa");
 const Router = require("koa-router");
@@ -19,18 +21,43 @@ const cors = require("@koa/cors");
 const defaultRouter = new Router();
 app.use(cors());
 
+const UserSpecificDb = require("./impl/aws/UserSpecificDb");
 const s3 = new AWS.S3();
-const db = new S3Db(s3, process.env.DB_BUCKET);
+//const globalS3Db = new S3Db(s3, process.env.DB_BUCKET);
+
+const DynamoDb = require("./impl/aws/DynamoDb");
+const dynamoDb = new UserSpecificDb("db");
+
+const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
+const dynamoClient = new AWS.DynamoDB.DocumentClient();
+
+const s3db = new UserSpecificDb("s3db");
+
+//const MigratingDb = require("./impl/aws/MigratingDb");
+//const db = new MigratingDb(dynamoDb, s3db);
+const db = dynamoDb;
+const globalDynamoDb = new DynamoDb(dynamoClient, DYNAMO_TABLE);
+//const globalDb = new MigratingDb(globalDynamoDb, globalS3Db);
+const globalDb = globalDynamoDb;
 
 const SimplePasswordAuth = require("./impl/local/SimplePasswordAuth");
 const LocalLogin = require("./apis/LocalLogin");
 const loginRouter = Router({prefix: "/api/v1.0/login",});
-const loginApi = new LocalLogin(db, new SimplePasswordAuth(db), loginRouter);
+const loginApi = new LocalLogin(globalDb, new SimplePasswordAuth(globalDb), loginRouter);
 app.use(async (ctx, next) => { 
     await loginApi.validateAuth(ctx, next);
 });
 app.use(loginRouter.routes());
 app.use(loginRouter.allowedMethods());
+
+app.use(async (ctx, next) => {
+    if(ctx.username) {
+        als.scope();
+        als.set("db", new DynamoDb(dynamoClient, DYNAMO_TABLE, ctx.accountId));
+        als.set("s3db", new S3Db(s3, process.env.DB_BUCKET, ctx.accountId));
+        await next();
+    }
+});
 
 
 const healthApi = require("./apis/Health");
@@ -42,15 +69,11 @@ defaultRouter.get("/api/v1.0/server/ips", IpsApi);
 app.use(defaultRouter.routes());
 app.use(defaultRouter.allowedMethods());
 
-const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
-const dynamoClient = new AWS.DynamoDB.DocumentClient();
 const CacheToDynamo = require("./impl/aws/CacheToDynamo");
-const DynamoDb = require("./impl/aws/DynamoDb");
-const dynamoDb = new DynamoDb(dynamoClient, DYNAMO_TABLE);
 const cacheToDynamo = new CacheToDynamo(dynamoDb);
 
 const DbVideoMapper = require("./impl/aws/DbVideoMapper");
-const videoMapper = new DbVideoMapper(db, dynamoDb);
+const videoMapper = new DbVideoMapper(s3db, dynamoDb);
 
 const filesRouter = new Router({prefix: "/api/v1.0/folders",});
 const FilesApi = require("./apis/Files");
@@ -81,13 +104,6 @@ const CollectionsApi = require("./apis/Collections");
 new CollectionsApi(db, collectionsRouter);
 app.use(collectionsRouter.routes());
 app.use(collectionsRouter.allowedMethods());
-
-/*const CacheToS3 = require("./impl/aws/CacheToS3");
-const cacheToS3 = new CacheToS3(s3, process.env.BUCKET, db);
-const S3CacheManager = require("./impl/aws/S3CacheManager");
-const s3CacheManager = new S3CacheManager({s3, bucket: process.env.BUCKET, db,});
-const S3AndCacheManager = require("./impl/aws/S3AndCacheManager");
-const s3AndCacheManager = new S3AndCacheManager(s3CacheManager, cacheToS3);*/
 
 const videosRouter = new Router({prefix: "/api/v1.0/videos",});
 const VideosApi = require("./apis/Videos");

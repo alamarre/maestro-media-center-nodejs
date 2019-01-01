@@ -1,9 +1,13 @@
 class S3Db {
-    constructor(s3, bucket) {
+    constructor(s3, bucket, prefix) {
         this.s3 = s3;
         this.bucket = bucket;
+        this.prefix = prefix;
     }
     getKey(pathParts) {
+        if(this.prefix) {
+            pathParts.unshift(this.prefix);
+        }
         const path = pathParts.join("/");
         return path;
     }

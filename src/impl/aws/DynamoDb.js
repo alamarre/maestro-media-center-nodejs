@@ -12,12 +12,13 @@ function cleanup(dynamoItem) {
 }
 
 class DynamoDb {
-    constructor(dynamoDocClient, table) {
+    constructor(dynamoDocClient, table, prefix) {
         this.dynamoDocClient = dynamoDocClient;
         this.table = table;
+        this.prefix = prefix;
     }
     getKey(pathParts) {
-        const partition = pathParts.shift();
+        const partition = this.prefix || pathParts.shift();
         const sort = pathParts.join("/");
         return {partition, sort,};
     }
@@ -38,6 +39,11 @@ class DynamoDb {
     }
 
     async set(value, ...pathParams) {
+        for(const key of Object.keys(value)) {
+            if(!value[key]) {
+                delete value[key];
+            }
+        }
         const key = this.getKey(pathParams);
         await this.dynamoDocClient.put({
             TableName: this.table,
@@ -72,14 +78,31 @@ class DynamoDb {
     async list(...prefix) {
         const partition = prefix.shift();
         const sortKey = prefix.join("/")+"/";
-        const result = await this.dynamoDocClient.query({
-            TableName: this.table,
-            KeyConditionExpression: "partion = :partition and begins_with(sort, :sortKey)",
-            ExpressionAttributeValues: {
-                ":partition": partition,
-                ":sortKey": sortKey,
-            },
-        }).promise();
+        let result;
+        if(prefix.length === 0) {
+            result = await this.dynamoDocClient.query({
+                TableName: this.table,
+                KeyConditionExpression: "#p = :partition",
+                ExpressionAttributeNames: {
+                    "#p": "partition",
+                },
+                ExpressionAttributeValues: {
+                    ":partition": partition,
+                },
+            }).promise();
+        } else {
+            result = await this.dynamoDocClient.query({
+                TableName: this.table,
+                KeyConditionExpression: "#p = :partition and begins_with(sort, :sortKey)",
+                ExpressionAttributeNames: {
+                    "#p": "partition",
+                },
+                ExpressionAttributeValues: {
+                    ":partition": partition,
+                    ":sortKey": sortKey,
+                },
+            }).promise();
+        }
 
         return result.Items.map(i => cleanup(i));
     }

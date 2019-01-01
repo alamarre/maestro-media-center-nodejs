@@ -51,13 +51,16 @@ class LocalLogin {
         }
         else {
             const token = tokenValue;
-            const username = await this.userManager.getUsername(token);
+            const loginData = await this.userManager.getUser(token);
+            const username = typeof loginData === "object" ? loginData.username : loginData;
+
             if (username == null) {
                 ctx.status = 403;
                 ctx.body = JSON.stringify({ "status": "unauthorized", });
                 return;
             } else {
                 ctx.username = username;
+                ctx.accountId = typeof loginData === "object" ? loginData.accountId : null;
                 ctx.profile = ctx.query["profile"];
             }
         }
@@ -68,12 +71,14 @@ class LocalLogin {
         this.router.post("/", this.post.bind(this));
     }
     async login(username, password) {
-        const hashPass = await this.db.get("credentials", username);
+        const hashData = await this.db.get("credentials", username);
+        const hashPass = typeof hashData === "object" ? hashData.hashPass : hashData;
+        const accountId = typeof hashData === "object" ? hashData.accountId : null;
         if (hashPass != null) {
             const hmac = crypto.createHash("sha256");
             const hash = hmac.update(password).digest("hex");
             if (hash.toLowerCase() == hashPass.toLowerCase()) {
-                return this.userManager.createAuthToken(username);
+                return this.userManager.createAuthToken(username, accountId);
             }
         }
         return null;
