@@ -62,6 +62,7 @@ typings/
 .vscode
 ui
 build
+resizebuild/
 images/
 
 .DS_Store

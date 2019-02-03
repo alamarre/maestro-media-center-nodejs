@@ -1,4 +1,7 @@
 const crypto = require("crypto");
+const bcrypt = require("../impl/local/BCrypt");
+
+const logger = require("../impl/logger").logger("login");
 
 class LocalLogin {
     constructor(db, userManager, router) {
@@ -62,6 +65,7 @@ class LocalLogin {
                 ctx.username = username;
                 ctx.accountId = typeof loginData === "object" ? loginData.accountId : null;
                 ctx.profile = ctx.query["profile"];
+                logger.addProperties({username, accountId: ctx.accountId || process.env.MAIN_ACCOUNT, profile: ctx.profile,});
             }
         }
         await next();
@@ -75,9 +79,14 @@ class LocalLogin {
         const hashPass = typeof hashData === "object" ? hashData.hashPass : hashData;
         const accountId = typeof hashData === "object" ? hashData.accountId : null;
         if (hashPass != null) {
+            if(await bcrypt.match(password, hashPass)) {
+                return this.userManager.createAuthToken(username, accountId);
+            }
             const hmac = crypto.createHash("sha256");
             const hash = hmac.update(password).digest("hex");
             if (hash.toLowerCase() == hashPass.toLowerCase()) {
+                hashData.hashPass = await bcrypt.hash(password);
+                await this.db.set(hashData,"credentials", username);
                 return this.userManager.createAuthToken(username, accountId);
             }
         }

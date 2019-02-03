@@ -28,10 +28,17 @@ class MetadataManager {
 
     async saveMovieMetadata(movieName, metadata) {
         await this.db.set(metadata, "metadata", "movie", movieName);
+        if(metadata.source === "not found") {
+            await this.db.set({movieName, type: "movie",}, "metadata_missing", "movie", movieName);
+        }
     }
 
     async saveTvShowMetadata(showName, metadata) {
         await this.db.set(metadata, "metadata", "tv", "show", showName);
+
+        if(metadata.source === "not found") {
+            await this.db.set({showName, type: "tv_show",}, "metadata_missing", "tv_show", showName);
+        }
     }
 
     async saveTvEpisodeMetadata(showName, season, episode, metadata) {

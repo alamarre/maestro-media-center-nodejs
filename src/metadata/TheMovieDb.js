@@ -51,12 +51,14 @@ class TheMovieDb {
             if(detailedInfo.belongs_to_collection) {
                 const collectionName = detailedInfo.belongs_to_collection.name;
                 const collectionDetails = await this.movieDb.collectionInfo({id: detailedInfo.belongs_to_collection.id,});
-                const poster =collectionDetails.poster_path ? `${IMAGE_ROOT}${collectionDetails.poster_path}` : null;
+                const poster = collectionDetails.poster_path ? `${IMAGE_ROOT}${collectionDetails.poster_path}` : null;
                 collectionInfo = {collectionName, poster: poster, movies: collectionDetails.parts.map(m => m.title),};
                 await this.db.set(collectionInfo, "collections", collectionName);
             }
             const poster = result.poster_path ? `${IMAGE_ROOT}${result.poster_path}` : null;
             return {"source": "TMDB", collectionInfo, overview: detailedInfo.overview, id: detailedInfo.id, poster,};
+        } else if (response.results.length > 1) {
+            await this.db.set({value: JSON.stringify({results: response.results,}),},"possible_metadata", "movie", movieName);
         }
         return {"source": "not found",};
     }
@@ -69,6 +71,8 @@ class TheMovieDb {
             const result = results[0];
             const poster = result.poster_path ? `${IMAGE_ROOT}${result.poster_path}` : null;
             return {"source": "TMDB", id: result.id, poster,};
+        } else if (results.length > 1) {
+            await this.db.set({value: JSON.stringify(results),},"possible_metadata", "tv", "show", showName);
         }
         return {"source": "not found",};
     }

@@ -12,22 +12,23 @@ const dynamoClient = new AWS.DynamoDB.DocumentClient();
 
 const dynamoDb = new DynamoDb(dynamoClient, DYNAMO_TABLE);
 
+
 const globalDynamo = new DynamoDb(dynamoClient, DYNAMO_TABLE);
 
 const s3 = new AWS.S3();
 async function run() {
     const params = {
         Bucket: "db.videos.omny.ca",
-        Prefix: "metadata/",
-    }; 
+        Prefix: "metadata/movie",
+    };
     let result = await s3.listObjectsV2(params).promise();
 
-    while(result && result.Contents.length > 0) {
-        for(const info of result.Contents) {
+    while (result && result.Contents.length > 0) {
+        for (const info of result.Contents) {
             const key = info.Key;
             const prefix = key.substring(0, key.indexOf("/"));
-            if(skipPrefixes.includes(prefix)
-            || !key.endsWith(".json")) {
+            if (skipPrefixes.includes(prefix)
+                || !key.endsWith(".json")) {
                 continue;
             }
 
@@ -36,20 +37,20 @@ async function run() {
                 Key: key,
             }).promise();
             let body = JSON.parse(data.Body.toString());
-            if(prefix === "credentials") {
-                body = {hashPass: body,};
+            if (prefix === "credentials") {
+                body = { hashPass: body, };
             } else if (prefix === "user_logins") {
-                body = {username: body,};
+                body = { username: body, };
             }
             console.log(key, prefix);
             const dynamoKey = key.substring(0, key.lastIndexOf(".json")).split("/");
-            if(globalPrefixes.includes(prefix)) {
+            if (globalPrefixes.includes(prefix)) {
                 globalDynamo.set.apply(globalDynamo, [body,].concat(dynamoKey));
             } else {
                 dynamoDb.set.apply(dynamoDb, [body,].concat(dynamoKey));
             }
         }
-        params.StartAfter = result.Contents[result.Contents.length -1].Key;
+        params.StartAfter = result.Contents[result.Contents.length - 1].Key;
         result = await s3.listObjectsV2(params).promise();
     }
 }

@@ -13,6 +13,21 @@ function addToCache(cache, ...parts) {
     }
 }
 
+function removeFromCache(cache, ...parts) {
+    let current = cache;
+    for(const index in parts) {
+        const part = parts[index];
+        if(index == parts.length -1) {
+            delete current.files[part];
+        } else {
+            if(!current.folders[part]) {
+                current.folders[part] = {files:{}, folders:{},};
+            }
+            current = current.folders[part];
+        }
+    }
+}
+
 class S3CacheManager {
     constructor({s3, bucket, db,}) {
         this.s3 = s3;
@@ -39,6 +54,19 @@ class S3CacheManager {
         const cache = await this.db.get("video","cache");
         const current = cache.folders["TV Shows"];
         addToCache(current, show, season, episode);
+        await this.db.set(cache, "video","cache");
+    }
+
+    async removeMovieFromCache(movieName) {
+        const cache = await this.db.get("video","cache");
+        delete cache.folders["Movies"].files[movieName];
+        await this.db.set(cache, "video","cache");
+    }
+
+    async removeEpisodeFromCache(show, season, episode) {
+        const cache = await this.db.get("video","cache");
+        const current = cache.folders["TV Shows"];
+        removeFromCache(current, show, season, episode);
         await this.db.set(cache, "video","cache");
     }
 

@@ -7,7 +7,10 @@ function cleanup(dynamoItem) {
             newResult[key] = dynamoItem[key];
         }
     }
-
+    newResult["key"] = `${newResult.partition}/${newResult.sort}`;
+    delete newResult.partition;
+    delete newResult.sort;
+    
     return newResult;
 }
 
@@ -31,6 +34,9 @@ class DynamoDb {
                 Key: key,
                 TableName: this.table,
             }).promise();
+            if(!result.Item) {
+                return null;
+            }
             return cleanup(result.Item);
          }
          catch(e) {

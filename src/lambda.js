@@ -10,6 +10,10 @@ const app = new Koa();
 app.use(bodyParser());
 const AWS = require("aws-sdk");
 
+const {loggingMiddleware, errorHandler,} = require("./impl/logger");
+app.use(loggingMiddleware("Maestro Media Center"));
+app.on("error", errorHandler);
+
 const S3Db = require("./impl/aws/S3Db");
 let port = 3000;
 const portString = process.env.PORT;
@@ -55,6 +59,10 @@ app.use(async (ctx, next) => {
         als.scope();
         als.set("db", new DynamoDb(dynamoClient, DYNAMO_TABLE, ctx.accountId));
         als.set("s3db", new S3Db(s3, process.env.DB_BUCKET, ctx.accountId));
+
+        if(!ctx.accountId) {
+            ctx.accountId = process.env.MAIN_ACCOUNT;
+        }
         await next();
     }
 });
@@ -74,6 +82,12 @@ const cacheToDynamo = new CacheToDynamo(dynamoDb);
 
 const DbVideoMapper = require("./impl/aws/DbVideoMapper");
 const videoMapper = new DbVideoMapper(s3db, dynamoDb);
+
+const accountRouter = new Router({prefix: "/api/v1.0/account",});
+const AccountApi = require("./apis/Account");
+new AccountApi(accountRouter);
+app.use(accountRouter.routes());
+app.use(accountRouter.allowedMethods());
 
 const filesRouter = new Router({prefix: "/api/v1.0/folders",});
 const FilesApi = require("./apis/Files");

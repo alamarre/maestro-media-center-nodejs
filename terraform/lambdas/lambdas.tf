@@ -23,6 +23,12 @@ data "archive_file" "import_lambda_zip" {
     output_path = "${path.module}/import_lambda.zip"
 }
 
+data "archive_file" "resizer_lambda_zip" {
+    type        = "zip"
+    source_dir  = "${path.module}/../../resize/build/"
+    output_path = "${path.module}/resizer_lambda.zip"
+}
+
 resource "aws_s3_bucket" "deployment_bucket" {
   bucket = "${var.deployment_bucket}"
   acl    = "private"
@@ -30,9 +36,16 @@ resource "aws_s3_bucket" "deployment_bucket" {
 
 resource "aws_s3_bucket_object" "object" {
   bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  key    = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  key    = "prefix${data.archive_file.import_lambda_zip.output_base64sha256}"
   source = "${data.archive_file.import_lambda_zip.output_path}"
   etag   = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+}
+
+resource "aws_s3_bucket_object" "resizer" {
+  bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  key    = "prefix${data.archive_file.resizer_lambda_zip.output_base64sha256}"
+  source = "${data.archive_file.resizer_lambda_zip.output_path}"
+  etag   = "${data.archive_file.resizer_lambda_zip.output_base64sha256}"
 }
 
 resource "aws_lambda_function" "maintain_cache" {
@@ -85,8 +98,9 @@ resource "aws_lambda_function" "fetch_metadata" {
   environment {
     variables = {
       DB_BUCKET = "${var.db_bucket}",
-      IMAGE_BUCKET = "${var.image_bucket}",
+      IMAGE_BUCKET = "${var.metadata_source_bucket}",
       TMDB_KEY = "${var.tmdb_key}"
+      MAIN_ACCOUNT = "${var.main_maestro_account}"
     }
   }
 }
@@ -147,8 +161,43 @@ resource "aws_lambda_function" "maestro_web" {
       SERVER = "https://gladiator.omny.ca",
       BUCKET = "${var.bucket}",
       DB_BUCKET = "${var.db_bucket}"
+      MAIN_ACCOUNT = "${var.main_maestro_account}"
     }
   }
+}
+
+resource "aws_lambda_function" "maestro_admin_web" {
+  function_name    = "maestro-admin-web"
+  role             = "arn:aws:iam::990455710365:role/maestro-lambda"
+  handler          = "src/admin-lambda.handler"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
+  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  runtime          = "nodejs8.10"
+  timeout = "20"
+  memory_size = "512"
+
+  environment {
+    variables = {
+      SERVER = "https://gladiator.omny.ca",
+      BUCKET = "${var.bucket}",
+      DB_BUCKET = "${var.db_bucket}"
+      MAIN_ACCOUNT = "${var.main_maestro_account}"
+    }
+  }
+}
+
+resource "aws_lambda_function" "image_resizer" {
+  function_name    = "maestro-image-resizer"
+  role             = "arn:aws:iam::990455710365:role/maestro-lambda"
+  handler          = "src/lambdas/MetadataImageResizer.handler"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.resizer.id}"
+  source_code_hash = "${data.archive_file.resizer_lambda_zip.output_base64sha256}"
+  runtime          = "nodejs8.10"
+  timeout = "30"
+  memory_size = "3008"
+  publish = true
 }
 
 data "aws_acm_certificate" "maestro" {
@@ -214,6 +263,172 @@ resource "aws_api_gateway_deployment" "maestro" {
   stage_name  = "web"
 }
 
+data "aws_acm_certificate" "maestro_admin" {
+  domain      = "${var.admin_domain}"
+  types       = ["AMAZON_ISSUED"]
+  most_recent = true
+}
+
+resource "aws_api_gateway_domain_name" "maestro_admin" {
+  domain_name              = "${var.admin_domain}"
+  regional_certificate_arn = "${data.aws_acm_certificate.maestro_admin.arn}"
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
+}
+
+resource "aws_api_gateway_rest_api" "maestro_admin" {
+    name = "maestro_admin"
+    description = "Proxy to handle requests to our API"
+
+    endpoint_configuration {
+        types = ["REGIONAL"]
+    }
+}
+
+resource "aws_api_gateway_resource" "maestro_admin" {
+  rest_api_id = "${aws_api_gateway_rest_api.maestro_admin.id}"
+  parent_id   = "${aws_api_gateway_rest_api.maestro_admin.root_resource_id}"
+  path_part   = "{proxy+}"
+}
+
+resource "aws_api_gateway_method" "admin_method" {
+  rest_api_id   = "${aws_api_gateway_rest_api.maestro_admin.id}"
+  resource_id   = "${aws_api_gateway_resource.maestro_admin.id}"
+  http_method   = "ANY"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "maestro_admin" {
+  rest_api_id             = "${aws_api_gateway_rest_api.maestro_admin.id}"
+  resource_id             = "${aws_api_gateway_resource.maestro_admin.id}"
+  http_method             = "${aws_api_gateway_method.admin_method.http_method}"
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${aws_lambda_function.maestro_admin_web.arn}/invocations"
+}
+
+resource "aws_lambda_permission" "apigw_lambda_admin" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.maestro_admin_web.arn}"
+  principal     = "apigateway.amazonaws.com"
+
+  # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
+  source_arn = "${aws_api_gateway_rest_api.maestro_admin.execution_arn}/*/*/*"
+}
+
+resource "aws_api_gateway_deployment" "maestro_admin" {
+  depends_on = ["aws_api_gateway_integration.maestro_admin"]
+
+  rest_api_id = "${aws_api_gateway_rest_api.maestro_admin.id}"
+  stage_name  = "web"
+}
+
+data "aws_acm_certificate" "omny" {
+  domain      = "*.omny.ca"
+  types       = ["AMAZON_ISSUED"]
+  most_recent = true
+}
+
+resource "aws_s3_bucket" "user_metadata" {
+  bucket = "${var.metadata_user_bucket}"
+  acl    = "private"
+
+  tags = {
+    Name = "Maestro resized metadata images"
+  }
+}
+
+resource "aws_cloudfront_origin_access_identity" "resizer_origin_access_identity" {
+  comment = "Maestro resizer"
+}
+
+data "aws_iam_policy_document" "resize_policy" {
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.user_metadata.arn}/*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["${aws_cloudfront_origin_access_identity.resizer_origin_access_identity.iam_arn}"]
+    }
+  }
+
+  statement {
+    actions   = ["s3:ListBucket"]
+    resources = ["${aws_s3_bucket.user_metadata.arn}"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["${aws_cloudfront_origin_access_identity.resizer_origin_access_identity.iam_arn}"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "resize_policy" {
+  bucket = "${aws_s3_bucket.user_metadata.id}"
+  policy = "${data.aws_iam_policy_document.resize_policy.json}"
+}
+
+resource "aws_cloudfront_distribution" "image_resizer" {
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "Maestro Metadata Image Resizer"
+
+  origin {
+    domain_name = "${aws_s3_bucket.user_metadata.bucket_regional_domain_name}"
+    origin_id   = "maestroresizer"
+
+    s3_origin_config {
+      origin_access_identity = "${aws_cloudfront_origin_access_identity.resizer_origin_access_identity.cloudfront_access_identity_path}"
+    }
+  }
+
+  default_cache_behavior {
+
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "maestroresizer"
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "allow-all"
+    min_ttl                = 0
+    default_ttl            = 20
+    max_ttl                = 60
+
+    lambda_function_association {
+      event_type   = "origin-response"
+      lambda_arn   = "${aws_lambda_function.image_resizer.qualified_arn}"
+      include_body = false
+    }
+
+    
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = false
+    acm_certificate_arn =  "${data.aws_acm_certificate.omny.arn}"
+    ssl_support_method = "sni-only"
+  }
+
+  restrictions {
+      geo_restriction {
+        restriction_type = "none"
+      }
+    }
+
+  aliases = ["${var.metadata_user_bucket}"]
+}
+
 resource "aws_route53_record" "maestro" {
   name    = "${aws_api_gateway_domain_name.maestro.domain_name}"
   type    = "A"
@@ -223,6 +438,18 @@ resource "aws_route53_record" "maestro" {
     evaluate_target_health = false
     name                   = "${aws_api_gateway_domain_name.maestro.regional_domain_name}"
     zone_id                = "${aws_api_gateway_domain_name.maestro.regional_zone_id}"
+  }
+}
+
+resource "aws_route53_record" "maestro_admin" {
+  name    = "${aws_api_gateway_domain_name.maestro_admin.domain_name}"
+  type    = "A"
+  zone_id = "${var.route53_zone}"
+
+  alias {
+    evaluate_target_health = false
+    name                   = "${aws_api_gateway_domain_name.maestro_admin.regional_domain_name}"
+    zone_id                = "${aws_api_gateway_domain_name.maestro_admin.regional_zone_id}"
   }
 }
 
