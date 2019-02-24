@@ -14,10 +14,10 @@ class BackgroundMetadataFetcher {
         const rootFolders = this.cache.getRootFolders();
         this.cache.listenForChanges(async (rootFolderName, relativePath) => {
             const rootFolder = rootFolders.filter(r => r.name === rootFolderName)[0];
-            const folderType = (rootFolder.type || "movies").toLowerCase();
+            const folderType = (rootFolder.type || "movie").toLowerCase();
             if(folderType === "tv") {
-                const showName = relativePath.split("/")[0];
-                await this.addTvShow(showName);
+                const [showName, season, episode,] = relativePath.split("/");
+                await this.addTvShow(showName, season, episode);
             } else {
                 await this.addMovie(relativePath);
             }
@@ -34,8 +34,8 @@ class BackgroundMetadataFetcher {
         }
     }
 
-    async addTvShow(showName) {
-        const data = this.metadataManager.getTvShowMetadata(showName);
+    async addTvShow(showName, season, episode) {
+        let data = this.metadataManager.getTvShowMetadata(showName);
         if(!data) {
             const metadata = await this.metadataFetcher.searchForTvShow(showName);
             if(metadata.poster) {
@@ -57,7 +57,15 @@ class BackgroundMetadataFetcher {
                     });
                 });
             }
-            this.metadataManager.saveTvShowMetadata(showName, metadata);
+            data = await this.metadataManager.saveTvShowMetadata(showName, metadata);
+        }
+
+        if(data && data.id && season) {
+            const episodeData = await this.metadataManager.getTvEpisodeMetadata(showName, season, episode);
+            if(!episodeData) {
+                const episodeMetadata = await this.metadataFetcher.getEpisodeInfo(data, season, episode);
+                await this.metadataManager.saveTvEpisodeMetadata(showName, season, episode, episodeMetadata);
+            }
         }
     }
 
@@ -69,6 +77,26 @@ class BackgroundMetadataFetcher {
             if(metadata.poster) {
                 const res = await fetch(metadata.poster);
                 const file = `./images/movies/${movieName}.jpg`;
+                const parentDir = path.dirname(file);
+                mkdirp.sync(parentDir);
+                await new Promise((resolve, reject) => {
+                    const dest = fs.createWriteStream(file);
+                    res.body.pipe(dest);
+                    res.body.on("error", err => {
+                        reject(err);
+                    });
+                    dest.on("finish", () => {
+                        resolve();
+                    });
+                    dest.on("error", err => {
+                        reject(err);
+                    });
+                });
+            }
+
+            if(metadata.collectionInfo && metadata.collectionInfo.poster) {
+                const res = await fetch(metadata.collectionInfo.poster);
+                const file = `./images/collections/${metadata.collectionInfo.collectionName}.jpg`;
                 const parentDir = path.dirname(file);
                 mkdirp.sync(parentDir);
                 await new Promise((resolve, reject) => {

@@ -12,7 +12,7 @@ class FileBasedDb {
         return path;
     }
     get(...pathParams) {
-        const file = this.getKey(pathParams);
+        const file = this.getKey(pathParams) + ".json";
         if (fs.existsSync(file) && fs.lstatSync(file).isFile()) {
             const result = JSON.parse(fs.readFileSync(file));
             return result;
@@ -20,7 +20,7 @@ class FileBasedDb {
         return null;
     }
     set(value, ...pathParams) {
-        const file = this.getKey(pathParams);
+        const file = this.getKey(pathParams) + ".json";
         const parentDir = path.dirname(file);
         mkdirp.sync(parentDir);
         fs.writeFileSync(file, JSON.stringify(value));

@@ -7,6 +7,9 @@ module.exports = {
     "env" : {
         "node" : true
     },
+    "globals": {
+        "Promise": true
+    },
     "rules": {
         "linebreak-style": ["error", "unix"],
         "quotes": ["error", "double"],

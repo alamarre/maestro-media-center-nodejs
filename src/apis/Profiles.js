@@ -5,15 +5,15 @@ class ProfilesApi {
         this.db = db;
     }
 
-    get(req, res) {
-        const profiles = this.db.list("profiles", req.username);
-        res.json(profiles);
+    async get(ctx) {
+        const profiles = await this.db.list("profiles", ctx.username);
+        ctx.body = (profiles);
     }
 
-    post(req, res) {
-        const profileInfo = req.body;
-        this.db.set(profileInfo, "profiles", req.username, profileInfo.profileName);
-        res.json(profileInfo);
+    async post(ctx) {
+        const profileInfo = ctx.request.body;
+        await this.db.set(profileInfo, "profiles", ctx.username, profileInfo.profileName);
+        ctx.body = (profileInfo);
     }
 
     init() {

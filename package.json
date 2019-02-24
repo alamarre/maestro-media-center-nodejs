@@ -6,25 +6,37 @@
   "author": "Al Lamarre <alamarre@gmail.com>",
   "license": "AGPL",
   "devDependencies": {
+    "builtin-modules": "^3.0.0",
     "eslint": "^5.2.0",
-    "nodemon": "^1.11.0"
+    "nodemon": "^1.11.0",
+    "webpack": "^4.27.1",
+    "webpack-source-map-support": "^2.0.1"
   },
   "scripts": {
-    "start": "nodemon --exec ./node_modules/.bin/ts-node -- ./index.ts"
+    "start": "nodemon --exec ./node_modules/.bin/ts-node -- ./index.ts",
+    "build-lambdas": "mkdir -p build/src && cp package.json build/package.json && cd build && export NODE_ENV=production && npm uninstall -- save aws-sdk && npm install  && cp -R ../src/ ./src",
+    "build-resizer": "cd resize && sh build.sh"
   },
   "dependencies": {
-    "body-parser": "^1.17.2",
-    "compression": "^1.7.0",
-    "cors": "^2.8.4",
-    "express": "^4.15.3",
+    "@koa/cors": "2",
+    "async-local-storage": "^2.1.0",
+    "aws-sdk": "^2.373.0",
+    "bcryptjs": "^2.4.3",
     "http": "^0.0.0",
+    "jimp": "^0.6.0",
+    "koa": "^2.6.2",
+    "koa-bodyparser": "^4.2.1",
+    "koa-router": "^7.4.0",
     "mkdirp": "^0.5.1",
     "moviedb-promise": "^1.2.5",
-    "node-fetch": "^2.2.0",
+    "node-fetch": "^2.3.0",
     "node-watch": "^0.5.5",
     "nodejs-websocket": "^1.7.1",
     "send-seekable": "^1.0.4",
+    "serverless-http": "^1.8.0",
+    "source-map-support": "^0.5.9",
     "uuid": "^3.1.0",
+    "winston": "^3.1.0",
     "ws": "^3.2.0"
   }
 }

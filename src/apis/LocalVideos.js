@@ -1,5 +1,4 @@
 var fs = require("fs");
-var rangeStream = require("range-stream");
 var parseRange = require("range-parser");
 
 class VideosApi {
@@ -8,61 +7,74 @@ class VideosApi {
         this.init();
         this.storageProvider = storageProvider;
     }
-    get(req, res, next) {
-        let path = req.params.path;
-        if (req.params[0]) {
-            path += req.params[0];
+    async get(ctx, next) {
+        let path = ctx.params.path;
+        if (ctx.params[0]) {
+            path += ctx.params[0];
         }
-        const listing = this.storageProvider.getRealPath(path);
-        
-        if(path.endsWith(".mp4")) {
+        const listing = await this.storageProvider.getRealPath(path);
+
+        if (path.endsWith(".mp4")) {
             const stat = fs.lstatSync(listing);
-            const stream = fs.createReadStream(listing);
-            this.sendSeekable(stream, "video/mp4", stat.size, req, res, next);
-        }else if(path.endsWith(".vtt")) {
-            res.type = "text/vtt";
-            res.sendFile(listing);
+            //const stream = fs.createReadStream(listing);
+            this.sendSeekable(listing, "video/mp4", stat.size, ctx, next);
+        } else if (path.endsWith(".vtt")) {
+            if(fs.existsSync(listing)) {
+                ctx.status = 404;
+            } else {
+                ctx.type = "text/vtt";
+                ctx.body = fs.readFileSync(listing);
+            }
         }
     }
     init() {
         this.router.get("/:path*", this.get.bind(this));
     }
     //taken from send-seekable 
-    sendSeekable(stream, type, length, req, res, next) {
+    sendSeekable(file, type, length, ctx, next) {
+        let stream;
         // indicate this resource can be partially requested
-        res.set("Accept-Ranges", "bytes");
+        ctx.set("Accept-Ranges", "bytes");
         // incorporate config
         if (length)
-            res.set("Content-Length", "" + length);
+            ctx.set("Content-Length", "" + length);
         if (type)
-            res.set("Content-Type", type);
+            ctx.set("Content-Type", type);
         // if this is a partial request
-        if (req.headers.range) {
+        if (ctx.headers.range) {
             // parse ranges
-            var ranges = parseRange(length, req.headers.range);
+            var ranges = parseRange(length, ctx.headers.range);
             if (ranges === -2)
-                return res.sendStatus(400); // malformed range
+                return ctx.status = 400; // malformed range
             if (ranges === -1) {
                 // unsatisfiable range
-                res.set("Content-Range", "*/" + length);
-                return res.sendStatus(416);
+                ctx.set("Content-Range", "*/" + length);
+                return ctx.status = 416;
             }
-            if (ranges.type !== "bytes")
-                return stream.pipe(res);
+            if (ranges.type !== "bytes") {
+                stream = fs.createReadStream(file);
+                return ctx.body = stream;
+            }
             if (ranges.length > 1) {
                 return next(new Error("send-seekable can only serve single ranges"));
             }
             var start = ranges[0].start;
             var end = ranges[0].end;
+            if (end === length - 1 && ctx.headers.range.endsWith("-")) {
+                end = Math.min(end, start + 5000000);
+            }
             // formatting response
-            res.status(206);
-            res.set("Content-Length", "" + (end - start + 1)); // end is inclusive
-            res.set("Content-Range", "bytes " + start + "-" + end + "/" + length);
+            ctx.status = 206;
+            ctx.set("Content-Length", "" + (end - start + 1)); // end is inclusive
+            ctx.set("Content-Range", "bytes " + start + "-" + end + "/" + length);
             // slicing the stream to partial content
-            stream = stream.pipe(rangeStream(start, end));
+            stream = fs.createReadStream(file, { start, end, });
+            //stream = stream.pipe(rangeStream(start, end));
+        } else {
+            stream = fs.createReadStream(file);
         }
-        return stream.pipe(res);
+        return ctx.body = stream;
     }
 }
 
-module.exports=VideosApi;
+module.exports = VideosApi;
