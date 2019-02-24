@@ -7,10 +7,11 @@ const S3Db = require("../impl/aws/S3Db");
 const db = new S3Db(s3, process.env.DB_BUCKET);
 const s3CacheManager = new S3CacheManager({ s3, bucket: process.env.BUCKET, db, });
 
+const normalize = require("./utilities/EventNormalizer");
 exports.handler = async (event, context, callback) => {
-    await Promise.all(event.Records.map(async record => {
-        if (record.dynamodb && record.dynamodb.Keys.partition.S === "video_sources") {
-            const sortKey = record.dynamodb.Keys.sort.S;
+    await Promise.all(normalize(event).map(async record => {
+        if (record.table === "video_sources") {
+            const sortKey = record.key;
             const parts = sortKey.split("/");
             const type = parts.shift();
             if (record.eventName === "INSERT" || record.eventName === "MODIFY") {

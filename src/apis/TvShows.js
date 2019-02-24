@@ -1,3 +1,5 @@
+const logger = require("../impl/logger").logger("TvShowsApi");
+
 class TvShowsApi {
     constructor(db, router) {
         this.router = router;
@@ -12,6 +14,7 @@ class TvShowsApi {
     async postShowProgress(ctx) {
         const obj = ctx.request.body;
         obj.lastUpdated = new Date().getTime();
+        logger.info("updated keep watching", {show: obj.show, epispode: obj.epispode, season: obj.season,});
         await this.db.set(obj, "user_data", ctx.username, ctx.profile, "tv_shows_keep_watching", obj.show);
         ctx.body = {result: "OK",};
     }

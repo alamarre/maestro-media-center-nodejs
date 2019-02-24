@@ -5,6 +5,7 @@ const pattern1 = /(S[0-9]{2})?\s*EP?([0-9]{2})/i;
 const pattern2 = /[0-9]{1,2}x([0-9]{2})/i;
 const pattern3 = /(\s|[.])[1-9]([0-9]{2})(\s|[.])/i;
 
+const yearPattern = /(.*) [(]?([0-9]{4})[)]?$/;
 const IMAGE_ROOT = "http://image.tmdb.org/t/p/original";
 
 function getEpisodeNumber(episode) {
@@ -42,8 +43,24 @@ class TheMovieDb {
 
     async searchForMovie(movieName) {
         console.log("searching tmdb for movie", movieName);
-        const response = await this.movieDb.searchMovie({query: movieName,});
-        const results = response.results.filter(m => normalizedMatch(m.title, movieName));
+        let year = -1;
+        const yearMatch = movieName.match(yearPattern);
+        let searchName = movieName;
+        if(yearMatch) {
+            searchName = yearMatch[1];
+            year = yearMatch[2];
+        }
+        const response = await this.movieDb.searchMovie({query: searchName,});
+        let results = response.results.filter(m => normalizedMatch(m.title, searchName));
+        if(results.length >1 && year != -1) {
+            const filtered = results.filter(r => r.release_date.startsWith(year));
+            if(filtered.length === 1) {
+                results = filtered;
+            }
+        }
+        if(results.length === 0 && response.results.length === 1) {
+            results = response.results;
+        }
         if(results.length === 1) {
             const result = results[0];
             const detailedInfo = await this.movieDb.movieInfo({ id: result.id, });
@@ -58,6 +75,7 @@ class TheMovieDb {
             const poster = result.poster_path ? `${IMAGE_ROOT}${result.poster_path}` : null;
             return {"source": "TMDB", collectionInfo, overview: detailedInfo.overview, id: detailedInfo.id, poster,};
         } else if (response.results.length > 1) {
+            console.log("multiple results found for movie",movieName);
             await this.db.set({value: JSON.stringify({results: response.results,}),},"possible_metadata", "movie", movieName);
         }
         return {"source": "not found",};
@@ -65,14 +83,37 @@ class TheMovieDb {
 
     async searchForTvShow(showName) {
         console.log("searching tmdb for show", showName);
-        const response = await this.movieDb.searchTv({query: showName,});
-        const results = response.results.filter(m => m.name.toLowerCase() === showName.toLowerCase());
+
+        let year = -1;
+        const yearMatch = showName.match(yearPattern);
+        let searchName = showName;
+        if(yearMatch) {
+            searchName = yearMatch[1];
+            year = yearMatch[2];
+        }
+        
+        const response = await this.movieDb.searchTv({query: searchName,});
+        let results = response.results.filter(m => normalizedMatch(m.name, searchName));
+        if(results.length >1 && year != -1) {
+            const filtered = results.filter(r => r.first_air_date.startsWith(year));
+            if(filtered.length === 1) {
+                results = filtered;
+            }
+        }
+        if(results.length === 0 && response.results.length === 1) {
+            results = response.results;
+        }
         if(results.length === 1) {
             const result = results[0];
             const poster = result.poster_path ? `${IMAGE_ROOT}${result.poster_path}` : null;
             return {"source": "TMDB", id: result.id, poster,};
         } else if (results.length > 1) {
+            console.log("multiple results found for show",showName);
             await this.db.set({value: JSON.stringify(results),},"possible_metadata", "tv", "show", showName);
+        }
+        else if (response.results.length > 1) {
+            console.log("multiple results found for show",showName);
+            await this.db.set({value: JSON.stringify({results: response.results,}),},"possible_metadata", "tv", "show", showName);
         }
         return {"source": "not found",};
     }

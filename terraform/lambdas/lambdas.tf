@@ -29,6 +29,45 @@ data "archive_file" "resizer_lambda_zip" {
     output_path = "${path.module}/resizer_lambda.zip"
 }
 
+data "aws_iam_policy_document" "sns-publish-sqs-policy" {
+  statement {
+    sid    = "any-sns-topic"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions = [
+      "SQS:SendMessage",
+    ]
+
+    resources = [
+      "arn:aws:sqs:*:${data.aws_caller_identity.current.account_id}:*",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceAccount"
+
+      values = [
+        "${data.aws_caller_identity.current.account_id}",
+      ]
+    }
+  }
+}
+
+
+resource "aws_sns_topic" "insert_video_sources" {
+  name = "insert-video_sources"
+}
+
+
+resource "aws_sns_topic" "remove_video_sources" {
+  name = "remove-video_sources"
+}
+
 resource "aws_s3_bucket" "deployment_bucket" {
   bucket = "${var.deployment_bucket}"
   acl    = "private"
@@ -66,6 +105,44 @@ resource "aws_lambda_function" "maintain_cache" {
   }
 }
 
+resource "aws_lambda_permission" "video_sources_maintain_cache_permission" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.maintain_cache.function_name}"
+  principal     = "sns.amazonaws.com"
+}
+
+resource "aws_sns_topic_subscription" "video_sources_maintain_cache_add" {
+  topic_arn = "${aws_sns_topic.insert_video_sources.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.maintain_cache.arn}"
+}
+
+resource "aws_sns_topic_subscription" "video_sources_maintain_cache_delete" {
+  topic_arn = "${aws_sns_topic.remove_video_sources.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.maintain_cache.arn}"
+}
+
+resource "aws_lambda_function" "route_messages" {
+  function_name    = "maestro_route_messages"
+  role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
+  handler          = "src/lambdas/RouteMessages.handler"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
+  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  runtime          = "nodejs8.10"
+  timeout = "15"
+  memory_size = "512"
+
+  environment {
+    variables = {
+      MAIN_ACCOUNT = "${var.main_maestro_account}"
+      TOPIC_PREFIX = "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:"
+    }
+  }
+}
+
 resource "aws_lambda_function" "vide_added_time" {
   function_name    = "maestro_video_added_time"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
@@ -84,6 +161,20 @@ resource "aws_lambda_function" "vide_added_time" {
   }
 }
 
+resource "aws_lambda_permission" "video_sources_video_added_time_permission" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.vide_added_time.function_name}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.insert_video_sources.arn}"
+}
+
+resource "aws_sns_topic_subscription" "video_sources_video_added_time" {
+  topic_arn = "${aws_sns_topic.insert_video_sources.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.vide_added_time.arn}"
+}
+
 resource "aws_lambda_function" "fetch_metadata" {
   function_name    = "maestro_fetch_metadata_from_dynamo_stream"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
@@ -95,14 +186,33 @@ resource "aws_lambda_function" "fetch_metadata" {
   timeout = "15"
   memory_size = "512"
 
+  dead_letter_config = {
+    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  }
+
   environment {
     variables = {
       DB_BUCKET = "${var.db_bucket}",
       IMAGE_BUCKET = "${var.metadata_source_bucket}",
       TMDB_KEY = "${var.tmdb_key}"
       MAIN_ACCOUNT = "${var.main_maestro_account}"
+      RESIZE_SNS_TOPIC = "${aws_sns_topic.image_resizer_topic.arn}"
     }
   }
+}
+
+resource "aws_lambda_permission" "video_sources_fetch_metadata_permission" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.fetch_metadata.function_name}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.insert_video_sources.arn}"
+}
+
+resource "aws_sns_topic_subscription" "video_sources_fetch_metadata" {
+  topic_arn = "${aws_sns_topic.insert_video_sources.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.fetch_metadata.arn}"
 }
 
 resource "aws_lambda_function" "rebuild_cache" {
@@ -115,6 +225,10 @@ resource "aws_lambda_function" "rebuild_cache" {
   runtime          = "nodejs8.10"
   timeout = "180"
   memory_size = "512"
+
+  dead_letter_config = {
+    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  }
 
   environment {
     variables = {
@@ -135,6 +249,10 @@ resource "aws_lambda_function" "import_to_s3" {
   timeout = "900"
   memory_size = "512"
 
+  dead_letter_config = {
+    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  }
+
   environment {
     variables = {
       SERVER = "https://gladiator.omny.ca",
@@ -144,6 +262,73 @@ resource "aws_lambda_function" "import_to_s3" {
     }
   }
 }
+
+resource "aws_lambda_function" "general_image_resizer" {
+  function_name    = "maestro_image_resizer"
+  role             = "arn:aws:iam::990455710365:role/maestro-lambda"
+  handler          = "src/lambdas/GenericImageResizer.handler"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
+  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  runtime          = "nodejs8.10"
+  timeout = "30"
+  memory_size = "1024"
+
+  dead_letter_config = {
+    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  }
+
+  environment {
+    variables = {
+      MAIN_ACCOUNT = "${var.main_maestro_account}"
+      KEEP_COPY_IN_SOURCE_BUCKET = "true"
+    }
+  }
+}
+
+resource "aws_sns_topic" "image_resizer_topic" {
+  name = "image-resizer-topic"
+}
+
+resource "aws_sns_topic_subscription" "image_resizer" {
+  topic_arn = "${aws_sns_topic.image_resizer_topic.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.general_image_resizer.arn}"
+}
+
+resource "aws_lambda_permission" "image_resizer_permission" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.general_image_resizer.function_name}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.image_resizer_topic.arn}"
+}
+
+resource "aws_sqs_queue" "image_resizer" {
+  name                      = "image-resizer-queue"
+  delay_seconds             = 0
+  receive_wait_time_seconds = 20
+}
+
+resource "aws_sqs_queue" "lambda_dlq" {
+  name                      = "lambda-dlq"
+  delay_seconds             = 0
+  receive_wait_time_seconds = 20
+}
+
+
+
+#resource "aws_lambda_event_source_mapping" "image_resizer" {
+#  event_source_arn = "${aws_sns_topic.image_resizer_topic.arn}"
+#  function_name    = "${aws_lambda_function.general_image_resizer.arn}"
+#}
+
+
+
+#resource "aws_lambda_event_source_mapping" "image_resizer" {
+#  event_source_arn = "${aws_sqs_queue.image_resizer.arn}"
+#  function_name    = "${aws_lambda_function.general_image_resizer.arn}"
+#}
 
 resource "aws_lambda_function" "maestro_web" {
   function_name    = "maestro-web"
@@ -183,6 +368,9 @@ resource "aws_lambda_function" "maestro_admin_web" {
       BUCKET = "${var.bucket}",
       DB_BUCKET = "${var.db_bucket}"
       MAIN_ACCOUNT = "${var.main_maestro_account}"
+      TMDB_KEY = "${var.tmdb_key}"
+      RESIZE_SNS_TOPIC = "${aws_sns_topic.image_resizer_topic.arn}"
+      IMAGE_BUCKET = "${var.metadata_source_bucket}"
     }
   }
 }
@@ -405,12 +593,13 @@ resource "aws_cloudfront_distribution" "image_resizer" {
     default_ttl            = 20
     max_ttl                = 60
 
+/* disable the resizer to move it to ahead of time
     lambda_function_association {
       event_type   = "origin-response"
       lambda_arn   = "${aws_lambda_function.image_resizer.qualified_arn}"
       include_body = false
     }
-
+*/
     
   }
 

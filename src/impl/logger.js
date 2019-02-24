@@ -58,7 +58,7 @@ const loggingMiddleware = (name) => {
 	return async(ctx, next) => {
 		const requestId = uuid();
 		const { method, path, } = ctx;
-		const requestProperties = { requestId, };
+		const requestProperties = { requestId, userAgent: ctx.headers["user-agent"], };
 		asyncLocalStorage.set("logProperties", requestProperties);
 
 		logger.info("received request", { path, method, });

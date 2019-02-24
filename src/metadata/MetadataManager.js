@@ -30,6 +30,8 @@ class MetadataManager {
         await this.db.set(metadata, "metadata", "movie", movieName);
         if(metadata.source === "not found") {
             await this.db.set({movieName, type: "movie",}, "metadata_missing", "movie", movieName);
+        } else {
+            await this.db.delete("possible_metadata", "movie", movieName);
         }
     }
 
@@ -38,6 +40,8 @@ class MetadataManager {
 
         if(metadata.source === "not found") {
             await this.db.set({showName, type: "tv_show",}, "metadata_missing", "tv_show", showName);
+        } else {
+            await this.db.delete("possible_metadata", "tv", "show", showName);
         }
     }
 

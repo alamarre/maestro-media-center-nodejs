@@ -10,10 +10,12 @@ const dynamoClient = new AWS.DynamoDB.DocumentClient();
 const DynamoDb = require("../impl/aws/DynamoDb");
 const db = new DynamoDb(dynamoClient, DYNAMO_TABLE);
 
+const normalize = require("./utilities/EventNormalizer");
+
 exports.handler = async (event, context, callback) => {
-	await Promise.all(event.Records.map(async record => {
-		if(record.dynamodb && record.dynamodb.Keys.partition.S === "video_sources") {
-            const sortKey = record.dynamodb.Keys.sort.S;
+	await Promise.all(normalize(event).map(async record => {
+		if(record.table === "video_sources") {
+            const sortKey = record.key;
             console.log(record.eventName, sortKey);
             if(record.eventName === "INSERT") {
                 console.log("adding", sortKey);

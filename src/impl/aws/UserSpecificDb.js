@@ -20,6 +20,11 @@ class UserSpecificDb {
         return await db.set.apply(db, args);
     }
 
+    async delete(...args) {
+        const db = this.getDb();
+        return await db.delete.apply(db, args);
+    }
+
     async addToStringSet(...args) {
         const db = this.getDb();
         return await db.addToStringSet.apply(db, args);

@@ -18,7 +18,7 @@ module.exports = async () => {
     const cache = await db.get("video", "cache");
     const tvShows = cache.folders["TV Shows"].folders;
     for(const show of Object.keys(tvShows)) {
-        if(show <= "The Vampire Diaries") {
+        if(show <= "Sample") {
             continue;
         }
         const seasons = tvShows[show].folders;

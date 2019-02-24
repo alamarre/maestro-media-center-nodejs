@@ -10,6 +10,12 @@ const app = new Koa();
 app.use(bodyParser());
 const AWS = require("aws-sdk");
 
+const s3 = new AWS.S3();
+const sns = new AWS.SNS();
+
+
+const MetadataManager = require("./metadata/MetadataManager");
+
 let port = 3000;
 const portString = process.env.PORT;
 if (portString) {
@@ -65,9 +71,16 @@ app.use(async (ctx, next) => {
     }
 });
 
+const metadataManager = new MetadataManager(db);
+const IMAGE_BUCKET = process.env.IMAGE_BUCKET;
+const S3MetadataFetcher = require("./metadata/S3MetadataFetcher");
+const Tmdb = require("./metadata/TheMovieDb");
+const tmdb = new Tmdb(db);
+const metadataFetcher = new S3MetadataFetcher(s3, sns, IMAGE_BUCKET, metadataManager, tmdb);
+
 const metadataRouter = new Router({prefix: "/api/v1.0/metadata",});
 const MetadataApi = require("./apis/admin/Metadata");
-new MetadataApi(metadataRouter, db);
+new MetadataApi(metadataRouter, db, metadataFetcher);
 app.use(metadataRouter.routes());
 app.use(metadataRouter.allowedMethods());
 

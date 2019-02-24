@@ -57,6 +57,14 @@ class DynamoDb {
         }).promise();
     }
 
+    async delete(...pathParams) {
+        const key = this.getKey(pathParams);
+        await this.dynamoDocClient.delete({
+            TableName: this.table,
+            Key: key,
+        }).promise();
+    }
+
     async addToStringSet(values, column, ...pathParams) {
         const key = this.getKey(pathParams);
         await this.dynamoDocClient.update({

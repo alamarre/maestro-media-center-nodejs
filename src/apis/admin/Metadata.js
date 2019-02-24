@@ -1,8 +1,9 @@
 class MetadataApi {
-    constructor(router, db) {
+    constructor(router, db, metadataFetcher) {
         this.router = router;
         this.init();
         this.db = db;
+        this.metadataFetcher = metadataFetcher;
     }
 
     async getMissingMetadata(ctx) {
@@ -39,8 +40,26 @@ class MetadataApi {
         ctx.body = result;
     }
 
+    async addMovieMetadata(ctx) {
+        const {movieName,} = ctx.params;
+        const accountId = ctx.accountId;
+        const metadata = ctx.request.body;
+        await this.metadataFetcher.addMovieMetadata(accountId, movieName, metadata);
+        ctx.status = 204;
+    }
+
+    async addTvShowMetadata(ctx) {
+        const {showName,} = ctx.params;
+        const accountId = ctx.accountId;
+        const metadata = ctx.request.body;
+        await this.metadataFetcher.addTvShowMetadata(accountId, showName, metadata);
+        ctx.status = 204;
+    }
+
     init() {
         this.router.get("/missing/:type/:subtype?", this.getMissingMetadata.bind(this));
+        this.router.put("/movie/:movieName", this.addMovieMetadata.bind(this));
+        this.router.put("/tv/show/:showName", this.addTvShowMetadata.bind(this));
     }
 }
 
