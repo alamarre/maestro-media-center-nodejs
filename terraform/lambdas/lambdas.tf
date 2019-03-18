@@ -201,6 +201,28 @@ resource "aws_lambda_function" "fetch_metadata" {
   }
 }
 
+resource "aws_lambda_function" "websockets" {
+  function_name    = "maestro_websockets"
+  role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
+  handler          = "src/lambdas/WebSocket.handler"
+  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  s3_key = "${aws_s3_bucket_object.object.id}"
+  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  runtime          = "nodejs8.10"
+  timeout = "15"
+  memory_size = "512"
+
+  dead_letter_config = {
+    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  }
+
+  environment {
+    variables = {
+      MAIN_ACCOUNT = "${var.main_maestro_account}"
+    }
+  }
+}
+
 resource "aws_lambda_permission" "video_sources_fetch_metadata_permission" {
   statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"

@@ -10,6 +10,34 @@ class MetadataFetcher {
         this.metadataFetcher = metadataFetcher;
     }
 
+    async addTvEpisodeMetadata(accountId, showName, season, episode, episodeMetadata) {
+        if(episodeMetadata.poster) {
+            console.log("fetching poster", episodeMetadata.poster);
+            const res = await fetch(episodeMetadata.poster);
+            const file = `tmdb/tv/episode/${episodeMetadata.id}/poster.jpg`;
+            await this.s3.putObject({
+                Bucket: this.imageBucket,
+                Key: file,
+                Body: res.body,
+                ContentLength: res.headers.get("content-length"),
+                ContentType: res.headers.get("content-type"),
+            }).promise();
+
+            const width = 227;
+            const height = 127;
+            const destinationImage = `${accountId}/${width}x${height}/tv/episode/${showName}/${season}/${episode}.png`;
+            const sourceImage = file;
+            const body = JSON.stringify({width, height, sourceImage, destinationImage,});
+
+            await this.sns.publish({
+                TopicArn: RESIZE_SNS_TOPIC,
+                Message: body,
+            }).promise();
+        }
+        await this.metadataManager.saveTvEpisodeMetadata(showName, season, episode, episodeMetadata);
+    }
+    
+
     async addTvShowMetadata(accountId, showName, metadata) {
             if(metadata.poster) {
                 console.log("fetching poster", metadata.poster);
@@ -61,30 +89,8 @@ class MetadataFetcher {
             const episodeData = await this.metadataManager.getTvEpisodeMetadata(showName, season, episode);
             if(!episodeData) {
                 const episodeMetadata = await this.metadataFetcher.getEpisodeInfo(data, season, episode);
-                if(episodeMetadata.poster) {
-                    console.log("fetching poster", episodeMetadata.poster);
-                    const res = await fetch(episodeMetadata.poster);
-                    const file = `tmdb/tv/episode/${episodeMetadata.id}/poster.jpg`;
-                    await this.s3.putObject({
-                        Bucket: this.imageBucket,
-                        Key: file,
-                        Body: res.body,
-                        ContentLength: res.headers.get("content-length"),
-                        ContentType: res.headers.get("content-type"),
-                    }).promise();
-
-                    const width = 227;
-                    const height = 127;
-                    const destinationImage = `${accountId}/${width}x${height}/tv/episode/${showName}/${season}/${episode}.png`;
-                    const sourceImage = file;
-                    const body = JSON.stringify({width, height, sourceImage, destinationImage,});
-
-                    await this.sns.publish({
-                        TopicArn: RESIZE_SNS_TOPIC,
-                        Message: body,
-                    }).promise();
-                }
-                await this.metadataManager.saveTvEpisodeMetadata(showName, season, episode, episodeMetadata);
+                
+                this.addTvEpisodeMetadata(accountId, showName, season, episode, episodeMetadata);
             }
         }
     }

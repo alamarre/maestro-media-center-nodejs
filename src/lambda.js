@@ -128,6 +128,12 @@ app.use(videosRouter.allowedMethods());
 const MetaDataManager = require("./metadata/MetadataManager");
 const metaDataManager = new MetaDataManager(db);
 
+const serversRouter = new Router({prefix: "/api/v1.0/servers",});
+const ServersApi = require("./apis/Servers");
+new ServersApi(db, serversRouter);
+app.use(serversRouter.routes());
+app.use(serversRouter.allowedMethods());
+
 const metadataRouter = new Router({prefix: "/api/v1.0/metadata",});
 const MetadataApi = require("./apis/Metadata");
 new MetadataApi(metadataRouter, metaDataManager);

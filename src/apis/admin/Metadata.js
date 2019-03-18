@@ -56,10 +56,19 @@ class MetadataApi {
         ctx.status = 204;
     }
 
+    async addTvEpisodeMetadata(ctx) {
+        const {showName, season, episode,} = ctx.params;
+        const accountId = ctx.accountId;
+        const metadata = ctx.request.body;
+        await this.metadataFetcher.addTvEpisodeMetadata(accountId, showName, season, episode, metadata);
+        ctx.status = 204;
+    }
+
     init() {
         this.router.get("/missing/:type/:subtype?", this.getMissingMetadata.bind(this));
         this.router.put("/movie/:movieName", this.addMovieMetadata.bind(this));
         this.router.put("/tv/show/:showName", this.addTvShowMetadata.bind(this));
+        this.router.put("/tv/episode/:showName/:season/:episode", this.addTvEpisodeMetadata.bind(this));
     }
 }
 
