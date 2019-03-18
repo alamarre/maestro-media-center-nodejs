@@ -25,6 +25,12 @@ class FileBasedDb {
         mkdirp.sync(parentDir);
         fs.writeFileSync(file, JSON.stringify(value));
     }
+    delete(...pathParams) {
+        const file = this.getKey(pathParams) + ".json";
+        if(fs.existsSync(file)) {
+            fs.unlinkSync(file);
+        }
+    }
     list(...prefix) {
         const results = [];
         const directory = this.getKey(prefix);
