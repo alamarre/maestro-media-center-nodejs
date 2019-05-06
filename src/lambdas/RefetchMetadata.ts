@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 
 const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
@@ -48,7 +48,7 @@ exports.handler = async () => {
         }
         
         if(result.LastEvaluatedKey) {
-            queryParams.ExclusiveStartKey = result.LastEvaluatedKey;
+            queryParams["ExclusiveStartKey"] = result.LastEvaluatedKey;
             result = await dynamoClient.query(queryParams).promise();
         } else {
             done = true;

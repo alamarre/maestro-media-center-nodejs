@@ -9,16 +9,21 @@
     "builtin-modules": "^3.0.0",
     "eslint": "^5.2.0",
     "nodemon": "^1.11.0",
-    "webpack": "^4.27.1",
+    "ts-loader": "^5.3.3",
+    "typescript": "^3.3.4000",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0",
     "webpack-source-map-support": "^2.0.1"
   },
   "scripts": {
     "start": "nodemon --exec ./node_modules/.bin/ts-node -- ./index.ts",
     "build-lambdas": "mkdir -p build/src && cp package.json build/package.json && cd build && export NODE_ENV=production && npm uninstall -- save aws-sdk && npm install  && cp -R ../src/ ./src",
-    "build-resizer": "cd resize && sh build.sh"
+    "build-resizer": "cd resize && sh build.sh",
+    "build-lambda-server": "FOR_LAMBDAS=true sh build-lambdas.sh"
   },
   "dependencies": {
     "@koa/cors": "2",
+    "@types/node": "^11.11.3",
     "async-local-storage": "^2.1.0",
     "aws-sdk": "^2.373.0",
     "bcryptjs": "^2.4.3",
@@ -34,7 +39,7 @@
     "nodejs-websocket": "^1.7.1",
     "send-seekable": "^1.0.4",
     "serverless-http": "^1.8.0",
-    "source-map-support": "^0.5.9",
+    "source-map-support": "^0.5.11",
     "uuid": "^3.1.0",
     "winston": "^3.1.0",
     "ws": "^3.2.0"

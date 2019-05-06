@@ -64,8 +64,10 @@ ui
 build
 resizebuild/
 images/
+out/
 
 .DS_Store
 *.zip
 *.tfplan
 .terraform
+dist/

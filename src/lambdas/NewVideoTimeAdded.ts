@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 /*
 const s3 = new AWS.S3();
 const S3Db = require("../impl/aws/S3Db");
