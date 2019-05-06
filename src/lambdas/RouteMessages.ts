@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 const sns = new AWS.SNS();
 
 const normalize = require("./utilities/EventNormalizer");

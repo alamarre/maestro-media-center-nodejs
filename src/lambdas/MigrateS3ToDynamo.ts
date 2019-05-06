@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 
 const globalPrefixes = ["user_logins", "credentials",];
 const skipPrefixes = ["video",];
@@ -50,7 +50,7 @@ async function run() {
                 dynamoDb.set.apply(dynamoDb, [body,].concat(dynamoKey));
             }
         }
-        params.StartAfter = result.Contents[result.Contents.length - 1].Key;
+        params["StartAfter"] = result.Contents[result.Contents.length - 1].Key;
         result = await s3.listObjectsV2(params).promise();
     }
 }

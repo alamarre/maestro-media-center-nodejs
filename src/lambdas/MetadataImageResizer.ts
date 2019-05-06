@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 
 const DynamoDb = require("../impl/aws/DynamoDb");
 

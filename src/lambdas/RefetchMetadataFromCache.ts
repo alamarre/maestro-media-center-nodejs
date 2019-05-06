@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 
 const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
@@ -12,7 +12,7 @@ exports.handler = async () => {
         Key: "video/cache.json",
     };
     const result = await s3.getObject(params).promise();
-    const cache = JSON.parse(result.Body);
+    const cache = JSON.parse(result.Body.toString());
     const tvFolders = cache.folders["TV Shows"].folders;
     for(const show of Object.keys(tvFolders)) {
         const showFolders = tvFolders[show].folders;

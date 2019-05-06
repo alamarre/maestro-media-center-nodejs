@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 
 const KEEP_COPY_IN_SOURCE_BUCKET = process.env.KEEP_COPY_IN_SOURCE_BUCKET === "true";
 

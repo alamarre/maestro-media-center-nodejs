@@ -1,4 +1,4 @@
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 //patch for aws-sdk in AWS not containing the latest API Gateway code
 require("./WebsocketApiGatewayPatch");
 

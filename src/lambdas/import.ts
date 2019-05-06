@@ -5,7 +5,7 @@ const BASE_VIDEO_URL = `${SERVER}/videos/`;
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 
 const fetch = require("node-fetch");
-const AWS = require("aws-sdk");
+import AWS = require("aws-sdk");
 
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
 const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
