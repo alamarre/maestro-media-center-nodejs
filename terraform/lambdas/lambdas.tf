@@ -88,7 +88,7 @@ resource "aws_lambda_function" "maintain_cache" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "15"
   memory_size      = "512"
 
@@ -125,7 +125,7 @@ resource "aws_lambda_function" "route_messages" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "15"
   memory_size      = "512"
 
@@ -144,7 +144,7 @@ resource "aws_lambda_function" "vide_added_time" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "15"
   memory_size      = "512"
 
@@ -176,7 +176,7 @@ resource "aws_lambda_function" "fetch_metadata" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "15"
   memory_size      = "512"
 
@@ -202,7 +202,7 @@ resource "aws_lambda_function" "websockets" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "15"
   memory_size      = "512"
 
@@ -238,7 +238,7 @@ resource "aws_lambda_function" "rebuild_cache" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "180"
   memory_size      = "512"
 
@@ -260,7 +260,7 @@ resource "aws_lambda_function" "import_to_s3" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "900"
   memory_size      = "512"
 
@@ -285,7 +285,7 @@ resource "aws_lambda_function" "general_image_resizer" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "30"
   memory_size      = "1024"
 
@@ -348,7 +348,7 @@ resource "aws_lambda_function" "maestro_web" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "20"
   memory_size      = "512"
 
@@ -369,7 +369,7 @@ resource "aws_lambda_function" "maestro_admin_web" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "20"
   memory_size      = "512"
 
@@ -393,7 +393,7 @@ resource "aws_lambda_function" "image_resizer" {
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.resizer.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
-  runtime          = "nodejs10.x"
+  runtime          = "nodejs12.x"
   timeout          = "30"
   memory_size      = "3008"
   publish          = true
