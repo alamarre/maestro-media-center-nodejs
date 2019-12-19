@@ -13,7 +13,7 @@ const lambdaName = process.env.LAMBDA_NAME || "server";
 module.exports = {
   entry: `./src/lambdas/${lambdaName}.ts`,
   devtool: "source-map",
-  target: "node",
+  target: process.env.TARGET || "node",
   mode: debug ? "development" : "production",
   optimization: {
     minimize: true,
@@ -34,6 +34,6 @@ module.exports = {
   output: {
     filename: "bundle.js",
     path: path.resolve(__dirname, "dist", lambdaName),
-    libraryTarget: "umd",
+    libraryTarget: "umd"
   },
 };

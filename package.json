@@ -7,25 +7,24 @@
   "license": "AGPL",
   "devDependencies": {
     "builtin-modules": "^3.0.0",
+    "@types/node": "^11.13.17",
     "eslint": "^5.2.0",
     "nodemon": "^1.11.0",
     "ts-loader": "^5.3.3",
-    "typescript": "^3.3.4000",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0",
+    "typescript": "^3.5.2",
+    "webpack": "^4.35.2",
+    "webpack-cli": "^3.3.5",
     "webpack-source-map-support": "^2.0.1"
   },
   "scripts": {
     "start": "nodemon --exec ./node_modules/.bin/ts-node -- ./index.ts",
-    "build-lambdas": "mkdir -p build/src && cp package.json build/package.json && cd build && export NODE_ENV=production && npm uninstall -- save aws-sdk && npm install  && cp -R ../src/ ./src",
-    "build-resizer": "cd resize && sh build.sh",
-    "build-lambda-server": "FOR_LAMBDAS=true sh build-lambdas.sh"
+    "build": "NODE_ENV=production; tsc && cp -f package.json out/package.json && cd out && npm i --production",
+    "test": "mocha"
   },
   "dependencies": {
     "@koa/cors": "2",
-    "@types/node": "^11.11.3",
-    "async-local-storage": "^2.1.0",
-    "aws-sdk": "^2.373.0",
+    "async-local-storage": "^2.3.1",
+    "aws-sdk": "^2.488.0",
     "bcryptjs": "^2.4.3",
     "http": "^0.0.0",
     "jimp": "^0.6.0",
@@ -33,7 +32,7 @@
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
     "mkdirp": "^0.5.1",
-    "moviedb-promise": "^1.2.5",
+    "moviedb-promise": "^1.4.1",
     "node-fetch": "^2.3.0",
     "node-watch": "^0.5.5",
     "nodejs-websocket": "^1.7.1",

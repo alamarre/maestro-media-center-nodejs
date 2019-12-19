@@ -10,8 +10,6 @@ VOLUME ["/opt/maestro/db", "/Movies"]
 RUN npm install --production
 ADD src ./src
 
-ADD images .
-
 EXPOSE 3000
 
 ENTRYPOINT ["node", "src/index.js"]

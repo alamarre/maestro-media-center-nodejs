@@ -8,7 +8,9 @@ module.exports = {
         "node" : true
     },
     "globals": {
-        "Promise": true
+        "Promise": true,
+        "Response": true,
+        "addEventListener": true
     },
     "rules": {
         "linebreak-style": ["error", "unix"],

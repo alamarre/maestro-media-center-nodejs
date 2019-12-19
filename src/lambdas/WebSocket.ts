@@ -21,60 +21,76 @@ function init(event) {
   };
 }
 
-exports.handler = async(event) => {
+exports.handler = async (event) => {
   init(event);
   const connectionId = event.requestContext.connectionId;
 
-  console.log(event.body);
+  console.log(JSON.stringify(event));
   try {
+    if (event.requestContext.eventType == "DISCONNECT") {
+      const listenerInfo = await db.get("listener-connections", connectionId);
+      if (listenerInfo) {
+        await db.delete(listenerInfo.accountId, "listening-websockets", listenerInfo.username, listenerInfo.id);
+        await db.delete("listener-connections", connectionId);
+      }
+
+      const senderInfo = await db.get("sender-connections", connectionId);
+      if (senderInfo) {
+        await db.delete(senderInfo.accountId, "sender-websockets", senderInfo.username, connectionId);
+        await db.delete("sender-connections", connectionId);
+      }
+    }
+
     const message = JSON.parse(event.body);
     const token = message.token;
-    
+
     const user = await userManager.getUser(token);
     const accountId = user.accountId || process.env.MAIN_ACCOUNT;
     const username = user.username;
 
     if (message.action == "setId") {
-        const {id,} = message;
-        // store in dynamo
-        await db.set({id, connectionId,}, accountId, "listening-websockets", username, id);
-        // alert all connected devices for user
+      const { id, } = message;
+      // store in dynamo
+      await db.set({ id, connectionId, }, accountId, "listening-websockets", username, id);
+      // alert all connected devices for user
 
-        const results = await db.list( accountId, "listening-websockets", username);
-        const ids = results.map(r => r.id);
-        const senders = await this.db.list(accountId, "sender-websockets", username);
-        for(const sender of senders) {
-            await send(sender.connectionId, JSON.stringify({ "action": "list", ids: ids, }));
-        }
+      const results = await db.list(accountId, "listening-websockets", username);
+      await db.set({ connectionId, accountId, username, id }, "listener-connections", connectionId);
+      const ids = results.map(r => r.id);
+      const senders = await db.list(accountId, "sender-websockets", username);
+      for (const sender of senders) {
+        await send(sender.connectionId, JSON.stringify({ "action": "list", ids: ids, }));
+      }
     } else if (message.action == "deregister") {
-        const {id,} = message;
-        // remove from dynamo
-        await db.delete(accountId, "listening-websockets", username, id);
-        // alert all connected devices
-        const results = await db.list( accountId, "listening-websockets", username);
-        const ids = results.map(r => r.id);
-        const senders = await this.db.list(accountId, "sender-websockets", username);
-        for(const sender of senders) {
-            await send(sender.connectionId, JSON.stringify({ "action": "list", ids, }));
-        }
+      const { id, } = message;
+      // remove from dynamo
+      await db.delete(accountId, "listening-websockets", username, id);
+      // alert all connected devices
+      const results = await db.list(accountId, "listening-websockets", username);
+      const ids = results.map(r => r.id);
+      const senders = await db.list(accountId, "sender-websockets", username);
+      for (const sender of senders) {
+        await send(sender.connectionId, JSON.stringify({ "action": "list", ids, }));
+      }
     } else if (message.client) {
-        const {client,} = message;
-        // lookup connection for client in Dynamo
-        const result = await db.get( accountId, "listening-websockets", username, client);
-        // send the message to the specific client
-        await send(result.connectionId, JSON.stringify(message));
+      const { client, } = message;
+      // lookup connection for client in Dynamo
+      const result = await db.get(accountId, "listening-websockets", username, client);
+      // send the message to the specific client
+      await send(result.connectionId, JSON.stringify(message));
 
-        await send(connectionId, message);
+      await send(connectionId, message);
     } else if (message.action == "list") {
-        await db.set({connectionId,}, accountId, "sender-websockets", username, connectionId);
-        const results = await db.list( accountId, "listening-websockets", username);
-        const ids = results.map(r => r.id);
-        await send(connectionId, JSON.stringify({ "action": "list", ids, }));
+      await db.set({ connectionId, }, accountId, "sender-websockets", username, connectionId);
+      await db.set({ connectionId, accountId, username }, "sender-connections", connectionId);
+      const results = await db.list(accountId, "listening-websockets", username);
+      const ids = results.map(r => r.id);
+      await send(connectionId, JSON.stringify({ "action": "list", ids, }));
     }
-  } catch(e) {
-      console.error(e);
+  } catch (e) {
+    console.error(e);
   }
-  
+
   // the return value is ignored when this function is invoked from WebSocket gateway
   return {};
 };
