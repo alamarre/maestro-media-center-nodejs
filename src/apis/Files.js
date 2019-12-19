@@ -1,9 +1,10 @@
 class FilesApi {
-    constructor(storageProvider, db, router) {
+    constructor(storageProvider, db, router, filter) {
         this.router = router;
         this.init();
         this.storageProvider = storageProvider;
         this.db = db;
+        this.filter = filter;
     }
     async get(ctx) {
         const path = ctx.query.path;
@@ -13,8 +14,19 @@ class FilesApi {
 
     async getCache(ctx) {
         const listing = await this.storageProvider.getCache();
-        listing.folders["Movie Collections"] = {folders: [], files: (await this.db.list("collections")).map(c => c.collectionName),};
-        ctx.body = (listing);
+        let collections = [];
+        try {
+            const allCollections = await this.db.list("collections");
+            collections = allCollections.map(c => c.collectionName);
+        } catch(e){
+            console.error(e);
+        }
+        listing.folders["Movie Collections"] = {folders: [], files: collections,};
+        let filtered = listing;
+        if(this.filter) {
+            filtered = await this.filter.getFilteredList(listing, ctx.username, ctx.profile);
+        }
+        ctx.body = filtered;
     }
 
     async getRootFolderInfo(ctx) {

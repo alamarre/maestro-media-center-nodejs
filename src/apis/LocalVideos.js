@@ -19,7 +19,7 @@ class VideosApi {
             //const stream = fs.createReadStream(listing);
             this.sendSeekable(listing, "video/mp4", stat.size, ctx, next);
         } else if (path.endsWith(".vtt")) {
-            if(fs.existsSync(listing)) {
+            if(!fs.existsSync(listing)) {
                 ctx.status = 404;
             } else {
                 ctx.type = "text/vtt";

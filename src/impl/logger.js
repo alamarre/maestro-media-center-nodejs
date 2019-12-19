@@ -16,7 +16,7 @@ class LogWrapper {
     }
 
     addProperties(properties) {
-        const currentProperties = asyncLocalStorage.get("logProperties");
+        const currentProperties = asyncLocalStorage.get("logProperties") || [];
         asyncLocalStorage.set("logProperties", Object.assign(currentProperties, properties));
     } 
 

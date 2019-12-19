@@ -1,9 +1,9 @@
 terraform {
-  required_version = "= 0.11.8"
   backend "s3" {
-    bucket = "terraform.omny.ca"
-    key    = "lambdas"
-    region = "us-east-1"
+    bucket  = "terraform.omny.ca"
+    profile = "maestro-terraform"
+    key     = "lambdas"
+    region  = "us-east-1"
   }
 }
 
@@ -13,20 +13,16 @@ provider "aws" {
   allowed_account_ids = ["990455710365"]
 }
 
-data "aws_region" "current" {}
-
-data "aws_caller_identity" "current" {}
-
-data "archive_file" "import_lambda_zip" {
-    type        = "zip"
-    source_dir  = "${path.module}/../../build/"
-    output_path = "${path.module}/import_lambda.zip"
+data "aws_region" "current" {
 }
 
-data "archive_file" "resizer_lambda_zip" {
-    type        = "zip"
-    source_dir  = "${path.module}/../../resize/build/"
-    output_path = "${path.module}/resizer_lambda.zip"
+data "aws_caller_identity" "current" {
+}
+
+data "archive_file" "import_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../out/"
+  output_path = "${path.module}/import_lambda.zip"
 }
 
 data "aws_iam_policy_document" "sns-publish-sqs-policy" {
@@ -52,55 +48,53 @@ data "aws_iam_policy_document" "sns-publish-sqs-policy" {
       variable = "AWS:SourceAccount"
 
       values = [
-        "${data.aws_caller_identity.current.account_id}",
+        data.aws_caller_identity.current.account_id,
       ]
     }
   }
 }
 
-
 resource "aws_sns_topic" "insert_video_sources" {
   name = "insert-video_sources"
 }
-
 
 resource "aws_sns_topic" "remove_video_sources" {
   name = "remove-video_sources"
 }
 
 resource "aws_s3_bucket" "deployment_bucket" {
-  bucket = "${var.deployment_bucket}"
+  bucket = var.deployment_bucket
   acl    = "private"
 }
 
 resource "aws_s3_bucket_object" "object" {
-  bucket = "${aws_s3_bucket.deployment_bucket.id}"
+  bucket = aws_s3_bucket.deployment_bucket.id
   key    = "prefix${data.archive_file.import_lambda_zip.output_base64sha256}"
-  source = "${data.archive_file.import_lambda_zip.output_path}"
-  etag   = "${data.archive_file.import_lambda_zip.output_base64sha256}"
+  source = data.archive_file.import_lambda_zip.output_path
+  etag   = data.archive_file.import_lambda_zip.output_base64sha256
 }
 
 resource "aws_s3_bucket_object" "resizer" {
-  bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  key    = "prefix${data.archive_file.resizer_lambda_zip.output_base64sha256}"
-  source = "${data.archive_file.resizer_lambda_zip.output_path}"
-  etag   = "${data.archive_file.resizer_lambda_zip.output_base64sha256}"
+  bucket = aws_s3_bucket.deployment_bucket.id
+  key    = "prefix${data.archive_file.import_lambda_zip.output_base64sha256}"
+  source = data.archive_file.import_lambda_zip.output_path
+  etag   = data.archive_file.import_lambda_zip.output_base64sha256
 }
 
 resource "aws_lambda_function" "maintain_cache" {
   function_name    = "maestro_maintain_cache"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
-  handler          = "src/lambdas/MaintainCache.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "15"
-  memory_size = "512"
+  handler          = "lambdas/MaintainCache.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "15"
+  memory_size      = "512"
 
   environment {
     variables = {
-      DB_BUCKET = "${var.db_bucket}"
+      DB_BUCKET = var.db_bucket
     }
   }
 }
@@ -108,36 +102,36 @@ resource "aws_lambda_function" "maintain_cache" {
 resource "aws_lambda_permission" "video_sources_maintain_cache_permission" {
   statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.maintain_cache.function_name}"
+  function_name = aws_lambda_function.maintain_cache.function_name
   principal     = "sns.amazonaws.com"
 }
 
 resource "aws_sns_topic_subscription" "video_sources_maintain_cache_add" {
-  topic_arn = "${aws_sns_topic.insert_video_sources.arn}"
+  topic_arn = aws_sns_topic.insert_video_sources.arn
   protocol  = "lambda"
-  endpoint  = "${aws_lambda_function.maintain_cache.arn}"
+  endpoint  = aws_lambda_function.maintain_cache.arn
 }
 
 resource "aws_sns_topic_subscription" "video_sources_maintain_cache_delete" {
-  topic_arn = "${aws_sns_topic.remove_video_sources.arn}"
+  topic_arn = aws_sns_topic.remove_video_sources.arn
   protocol  = "lambda"
-  endpoint  = "${aws_lambda_function.maintain_cache.arn}"
+  endpoint  = aws_lambda_function.maintain_cache.arn
 }
 
 resource "aws_lambda_function" "route_messages" {
   function_name    = "maestro_route_messages"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
-  handler          = "src/lambdas/RouteMessages.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "15"
-  memory_size = "512"
+  handler          = "lambdas/RouteMessages.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "15"
+  memory_size      = "512"
 
   environment {
     variables = {
-      MAIN_ACCOUNT = "${var.main_maestro_account}"
+      MAIN_ACCOUNT = var.main_maestro_account
       TOPIC_PREFIX = "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:"
     }
   }
@@ -146,17 +140,17 @@ resource "aws_lambda_function" "route_messages" {
 resource "aws_lambda_function" "vide_added_time" {
   function_name    = "maestro_video_added_time"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
-  handler          = "src/lambdas/NewVideoTimeAdded.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "15"
-  memory_size = "512"
+  handler          = "lambdas/NewVideoTimeAdded.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "15"
+  memory_size      = "512"
 
   environment {
     variables = {
-      DB_BUCKET = "${var.db_bucket}"
+      DB_BUCKET = var.db_bucket
     }
   }
 }
@@ -164,39 +158,39 @@ resource "aws_lambda_function" "vide_added_time" {
 resource "aws_lambda_permission" "video_sources_video_added_time_permission" {
   statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.vide_added_time.function_name}"
+  function_name = aws_lambda_function.vide_added_time.function_name
   principal     = "sns.amazonaws.com"
-  source_arn    = "${aws_sns_topic.insert_video_sources.arn}"
+  source_arn    = aws_sns_topic.insert_video_sources.arn
 }
 
 resource "aws_sns_topic_subscription" "video_sources_video_added_time" {
-  topic_arn = "${aws_sns_topic.insert_video_sources.arn}"
+  topic_arn = aws_sns_topic.insert_video_sources.arn
   protocol  = "lambda"
-  endpoint  = "${aws_lambda_function.vide_added_time.arn}"
+  endpoint  = aws_lambda_function.vide_added_time.arn
 }
 
 resource "aws_lambda_function" "fetch_metadata" {
   function_name    = "maestro_fetch_metadata_from_dynamo_stream"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
-  handler          = "src/lambdas/FetchMetadata.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "15"
-  memory_size = "512"
+  handler          = "lambdas/FetchMetadata.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "15"
+  memory_size      = "512"
 
-  dead_letter_config = {
-    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
   environment {
     variables = {
-      DB_BUCKET = "${var.db_bucket}",
-      IMAGE_BUCKET = "${var.metadata_source_bucket}",
-      TMDB_KEY = "${var.tmdb_key}"
-      MAIN_ACCOUNT = "${var.main_maestro_account}"
-      RESIZE_SNS_TOPIC = "${aws_sns_topic.image_resizer_topic.arn}"
+      DB_BUCKET        = var.db_bucket
+      IMAGE_BUCKET     = var.metadata_source_bucket
+      TMDB_KEY         = var.tmdb_key
+      MAIN_ACCOUNT     = var.main_maestro_account
+      RESIZE_SNS_TOPIC = aws_sns_topic.image_resizer_topic.arn
     }
   }
 }
@@ -204,21 +198,21 @@ resource "aws_lambda_function" "fetch_metadata" {
 resource "aws_lambda_function" "websockets" {
   function_name    = "maestro_websockets"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
-  handler          = "src/lambdas/WebSocket.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "15"
-  memory_size = "512"
+  handler          = "lambdas/WebSocket.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "15"
+  memory_size      = "512"
 
-  dead_letter_config = {
-    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
   environment {
     variables = {
-      MAIN_ACCOUNT = "${var.main_maestro_account}"
+      MAIN_ACCOUNT = var.main_maestro_account
     }
   }
 }
@@ -226,61 +220,60 @@ resource "aws_lambda_function" "websockets" {
 resource "aws_lambda_permission" "video_sources_fetch_metadata_permission" {
   statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.fetch_metadata.function_name}"
+  function_name = aws_lambda_function.fetch_metadata.function_name
   principal     = "sns.amazonaws.com"
-  source_arn    = "${aws_sns_topic.insert_video_sources.arn}"
+  source_arn    = aws_sns_topic.insert_video_sources.arn
 }
 
 resource "aws_sns_topic_subscription" "video_sources_fetch_metadata" {
-  topic_arn = "${aws_sns_topic.insert_video_sources.arn}"
+  topic_arn = aws_sns_topic.insert_video_sources.arn
   protocol  = "lambda"
-  endpoint  = "${aws_lambda_function.fetch_metadata.arn}"
+  endpoint  = aws_lambda_function.fetch_metadata.arn
 }
 
 resource "aws_lambda_function" "rebuild_cache" {
   function_name    = "maestro_rebuild_cache"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
-  handler          = "src/lambdas/RebuildCache.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "180"
-  memory_size = "512"
+  handler          = "lambdas/RebuildCache.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "180"
+  memory_size      = "512"
 
-  dead_letter_config = {
-    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
   environment {
     variables = {
-      DB_BUCKET = "${var.db_bucket}"
+      DB_BUCKET = var.db_bucket
     }
   }
 }
 
-
 resource "aws_lambda_function" "import_to_s3" {
   function_name    = "import_cache_to_s3"
   role             = "arn:aws:iam::990455710365:role/lambda-import-s3"
-  handler          = "src/lambdas/import.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "900"
-  memory_size = "512"
+  handler          = "lambdas/import.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "900"
+  memory_size      = "512"
 
-  dead_letter_config = {
-    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
   environment {
     variables = {
-      SERVER = "https://gladiator.omny.ca",
-      BUCKET = "${var.bucket}",
-      DB_BUCKET = "${var.db_bucket}",
-      ACCESS_TOKEN = "${var.access_token}"
+      SERVER       = "https://gladiator.omny.ca"
+      BUCKET       = var.bucket
+      DB_BUCKET    = var.db_bucket
+      ACCESS_TOKEN = var.access_token
     }
   }
 }
@@ -288,21 +281,21 @@ resource "aws_lambda_function" "import_to_s3" {
 resource "aws_lambda_function" "general_image_resizer" {
   function_name    = "maestro_image_resizer"
   role             = "arn:aws:iam::990455710365:role/maestro-lambda"
-  handler          = "src/lambdas/GenericImageResizer.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "30"
-  memory_size = "1024"
+  handler          = "lambdas/GenericImageResizer.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "30"
+  memory_size      = "1024"
 
-  dead_letter_config = {
-    target_arn = "${aws_sqs_queue.lambda_dlq.arn}"
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
   }
 
   environment {
     variables = {
-      MAIN_ACCOUNT = "${var.main_maestro_account}"
+      MAIN_ACCOUNT               = var.main_maestro_account
       KEEP_COPY_IN_SOURCE_BUCKET = "true"
     }
   }
@@ -313,17 +306,17 @@ resource "aws_sns_topic" "image_resizer_topic" {
 }
 
 resource "aws_sns_topic_subscription" "image_resizer" {
-  topic_arn = "${aws_sns_topic.image_resizer_topic.arn}"
+  topic_arn = aws_sns_topic.image_resizer_topic.arn
   protocol  = "lambda"
-  endpoint  = "${aws_lambda_function.general_image_resizer.arn}"
+  endpoint  = aws_lambda_function.general_image_resizer.arn
 }
 
 resource "aws_lambda_permission" "image_resizer_permission" {
   statement_id  = "AllowExecutionFromSNS"
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.general_image_resizer.function_name}"
+  function_name = aws_lambda_function.general_image_resizer.function_name
   principal     = "sns.amazonaws.com"
-  source_arn    = "${aws_sns_topic.image_resizer_topic.arn}"
+  source_arn    = aws_sns_topic.image_resizer_topic.arn
 }
 
 resource "aws_sqs_queue" "image_resizer" {
@@ -338,14 +331,10 @@ resource "aws_sqs_queue" "lambda_dlq" {
   receive_wait_time_seconds = 20
 }
 
-
-
 #resource "aws_lambda_event_source_mapping" "image_resizer" {
 #  event_source_arn = "${aws_sns_topic.image_resizer_topic.arn}"
 #  function_name    = "${aws_lambda_function.general_image_resizer.arn}"
 #}
-
-
 
 #resource "aws_lambda_event_source_mapping" "image_resizer" {
 #  event_source_arn = "${aws_sqs_queue.image_resizer.arn}"
@@ -355,20 +344,20 @@ resource "aws_sqs_queue" "lambda_dlq" {
 resource "aws_lambda_function" "maestro_web" {
   function_name    = "maestro-web"
   role             = "arn:aws:iam::990455710365:role/maestro-lambda"
-  handler          = "src/lambda.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "20"
-  memory_size = "512"
+  handler          = "lambdas/server.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "20"
+  memory_size      = "512"
 
   environment {
     variables = {
-      SERVER = "https://gladiator.omny.ca",
-      BUCKET = "${var.bucket}",
-      DB_BUCKET = "${var.db_bucket}"
-      MAIN_ACCOUNT = "${var.main_maestro_account}"
+      SERVER       = "https://gladiator.omny.ca"
+      BUCKET       = var.bucket
+      DB_BUCKET    = var.db_bucket
+      MAIN_ACCOUNT = var.main_maestro_account
     }
   }
 }
@@ -377,22 +366,22 @@ resource "aws_lambda_function" "maestro_admin_web" {
   function_name    = "maestro-admin-web"
   role             = "arn:aws:iam::990455710365:role/maestro-lambda"
   handler          = "src/admin-lambda.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.object.id}"
-  source_code_hash = "${data.archive_file.import_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "20"
-  memory_size = "512"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.object.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "20"
+  memory_size      = "512"
 
   environment {
     variables = {
-      SERVER = "https://gladiator.omny.ca",
-      BUCKET = "${var.bucket}",
-      DB_BUCKET = "${var.db_bucket}"
-      MAIN_ACCOUNT = "${var.main_maestro_account}"
-      TMDB_KEY = "${var.tmdb_key}"
-      RESIZE_SNS_TOPIC = "${aws_sns_topic.image_resizer_topic.arn}"
-      IMAGE_BUCKET = "${var.metadata_source_bucket}"
+      SERVER           = "https://gladiator.omny.ca"
+      BUCKET           = var.bucket
+      DB_BUCKET        = var.db_bucket
+      MAIN_ACCOUNT     = var.main_maestro_account
+      TMDB_KEY         = var.tmdb_key
+      RESIZE_SNS_TOPIC = aws_sns_topic.image_resizer_topic.arn
+      IMAGE_BUCKET     = var.metadata_source_bucket
     }
   }
 }
@@ -400,25 +389,25 @@ resource "aws_lambda_function" "maestro_admin_web" {
 resource "aws_lambda_function" "image_resizer" {
   function_name    = "maestro-image-resizer"
   role             = "arn:aws:iam::990455710365:role/maestro-lambda"
-  handler          = "src/lambdas/MetadataImageResizer.handler"
-  s3_bucket = "${aws_s3_bucket.deployment_bucket.id}"
-  s3_key = "${aws_s3_bucket_object.resizer.id}"
-  source_code_hash = "${data.archive_file.resizer_lambda_zip.output_base64sha256}"
-  runtime          = "nodejs8.10"
-  timeout = "30"
-  memory_size = "3008"
-  publish = true
+  handler          = "lambdas/MetadataImageResizer.handler"
+  s3_bucket        = aws_s3_bucket.deployment_bucket.id
+  s3_key           = aws_s3_bucket_object.resizer.id
+  source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
+  runtime          = "nodejs10.x"
+  timeout          = "30"
+  memory_size      = "3008"
+  publish          = true
 }
 
 data "aws_acm_certificate" "maestro" {
-  domain      = "${var.domain}"
+  domain      = var.domain
   types       = ["AMAZON_ISSUED"]
   most_recent = true
 }
 
 resource "aws_api_gateway_domain_name" "maestro" {
-  domain_name              = "${var.domain}"
-  regional_certificate_arn = "${data.aws_acm_certificate.maestro.arn}"
+  domain_name              = var.domain
+  regional_certificate_arn = data.aws_acm_certificate.maestro.arn
 
   endpoint_configuration {
     types = ["REGIONAL"]
@@ -426,31 +415,31 @@ resource "aws_api_gateway_domain_name" "maestro" {
 }
 
 resource "aws_api_gateway_rest_api" "maestro" {
-    name = "maestro"
-    description = "Proxy to handle requests to our API"
+  name        = "maestro"
+  description = "Proxy to handle requests to our API"
 
-    endpoint_configuration {
-        types = ["REGIONAL"]
-    }
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
 }
 
 resource "aws_api_gateway_resource" "maestro" {
-  rest_api_id = "${aws_api_gateway_rest_api.maestro.id}"
-  parent_id   = "${aws_api_gateway_rest_api.maestro.root_resource_id}"
+  rest_api_id = aws_api_gateway_rest_api.maestro.id
+  parent_id   = aws_api_gateway_rest_api.maestro.root_resource_id
   path_part   = "{proxy+}"
 }
 
 resource "aws_api_gateway_method" "method" {
-  rest_api_id   = "${aws_api_gateway_rest_api.maestro.id}"
-  resource_id   = "${aws_api_gateway_resource.maestro.id}"
+  rest_api_id   = aws_api_gateway_rest_api.maestro.id
+  resource_id   = aws_api_gateway_resource.maestro.id
   http_method   = "ANY"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "maestro" {
-  rest_api_id             = "${aws_api_gateway_rest_api.maestro.id}"
-  resource_id             = "${aws_api_gateway_resource.maestro.id}"
-  http_method             = "${aws_api_gateway_method.method.http_method}"
+  rest_api_id             = aws_api_gateway_rest_api.maestro.id
+  resource_id             = aws_api_gateway_resource.maestro.id
+  http_method             = aws_api_gateway_method.method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${aws_lambda_function.maestro_web.arn}/invocations"
@@ -459,7 +448,7 @@ resource "aws_api_gateway_integration" "maestro" {
 resource "aws_lambda_permission" "apigw_lambda" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.maestro_web.arn}"
+  function_name = aws_lambda_function.maestro_web.arn
   principal     = "apigateway.amazonaws.com"
 
   # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
@@ -467,21 +456,21 @@ resource "aws_lambda_permission" "apigw_lambda" {
 }
 
 resource "aws_api_gateway_deployment" "maestro" {
-  depends_on = ["aws_api_gateway_integration.maestro"]
+  depends_on = [aws_api_gateway_integration.maestro]
 
-  rest_api_id = "${aws_api_gateway_rest_api.maestro.id}"
+  rest_api_id = aws_api_gateway_rest_api.maestro.id
   stage_name  = "web"
 }
 
 data "aws_acm_certificate" "maestro_admin" {
-  domain      = "${var.admin_domain}"
+  domain      = var.admin_domain
   types       = ["AMAZON_ISSUED"]
   most_recent = true
 }
 
 resource "aws_api_gateway_domain_name" "maestro_admin" {
-  domain_name              = "${var.admin_domain}"
-  regional_certificate_arn = "${data.aws_acm_certificate.maestro_admin.arn}"
+  domain_name              = var.admin_domain
+  regional_certificate_arn = data.aws_acm_certificate.maestro_admin.arn
 
   endpoint_configuration {
     types = ["REGIONAL"]
@@ -489,31 +478,31 @@ resource "aws_api_gateway_domain_name" "maestro_admin" {
 }
 
 resource "aws_api_gateway_rest_api" "maestro_admin" {
-    name = "maestro_admin"
-    description = "Proxy to handle requests to our API"
+  name        = "maestro_admin"
+  description = "Proxy to handle requests to our API"
 
-    endpoint_configuration {
-        types = ["REGIONAL"]
-    }
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
 }
 
 resource "aws_api_gateway_resource" "maestro_admin" {
-  rest_api_id = "${aws_api_gateway_rest_api.maestro_admin.id}"
-  parent_id   = "${aws_api_gateway_rest_api.maestro_admin.root_resource_id}"
+  rest_api_id = aws_api_gateway_rest_api.maestro_admin.id
+  parent_id   = aws_api_gateway_rest_api.maestro_admin.root_resource_id
   path_part   = "{proxy+}"
 }
 
 resource "aws_api_gateway_method" "admin_method" {
-  rest_api_id   = "${aws_api_gateway_rest_api.maestro_admin.id}"
-  resource_id   = "${aws_api_gateway_resource.maestro_admin.id}"
+  rest_api_id   = aws_api_gateway_rest_api.maestro_admin.id
+  resource_id   = aws_api_gateway_resource.maestro_admin.id
   http_method   = "ANY"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "maestro_admin" {
-  rest_api_id             = "${aws_api_gateway_rest_api.maestro_admin.id}"
-  resource_id             = "${aws_api_gateway_resource.maestro_admin.id}"
-  http_method             = "${aws_api_gateway_method.admin_method.http_method}"
+  rest_api_id             = aws_api_gateway_rest_api.maestro_admin.id
+  resource_id             = aws_api_gateway_resource.maestro_admin.id
+  http_method             = aws_api_gateway_method.admin_method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${aws_lambda_function.maestro_admin_web.arn}/invocations"
@@ -522,7 +511,7 @@ resource "aws_api_gateway_integration" "maestro_admin" {
 resource "aws_lambda_permission" "apigw_lambda_admin" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.maestro_admin_web.arn}"
+  function_name = aws_lambda_function.maestro_admin_web.arn
   principal     = "apigateway.amazonaws.com"
 
   # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
@@ -530,9 +519,9 @@ resource "aws_lambda_permission" "apigw_lambda_admin" {
 }
 
 resource "aws_api_gateway_deployment" "maestro_admin" {
-  depends_on = ["aws_api_gateway_integration.maestro_admin"]
+  depends_on = [aws_api_gateway_integration.maestro_admin]
 
-  rest_api_id = "${aws_api_gateway_rest_api.maestro_admin.id}"
+  rest_api_id = aws_api_gateway_rest_api.maestro_admin.id
   stage_name  = "web"
 }
 
@@ -543,7 +532,7 @@ data "aws_acm_certificate" "omny" {
 }
 
 resource "aws_s3_bucket" "user_metadata" {
-  bucket = "${var.metadata_user_bucket}"
+  bucket = var.metadata_user_bucket
   acl    = "private"
 
   tags = {
@@ -562,42 +551,41 @@ data "aws_iam_policy_document" "resize_policy" {
 
     principals {
       type        = "AWS"
-      identifiers = ["${aws_cloudfront_origin_access_identity.resizer_origin_access_identity.iam_arn}"]
+      identifiers = [aws_cloudfront_origin_access_identity.resizer_origin_access_identity.iam_arn]
     }
   }
 
   statement {
     actions   = ["s3:ListBucket"]
-    resources = ["${aws_s3_bucket.user_metadata.arn}"]
+    resources = [aws_s3_bucket.user_metadata.arn]
 
     principals {
       type        = "AWS"
-      identifiers = ["${aws_cloudfront_origin_access_identity.resizer_origin_access_identity.iam_arn}"]
+      identifiers = [aws_cloudfront_origin_access_identity.resizer_origin_access_identity.iam_arn]
     }
   }
 }
 
 resource "aws_s3_bucket_policy" "resize_policy" {
-  bucket = "${aws_s3_bucket.user_metadata.id}"
-  policy = "${data.aws_iam_policy_document.resize_policy.json}"
+  bucket = aws_s3_bucket.user_metadata.id
+  policy = data.aws_iam_policy_document.resize_policy.json
 }
 
 resource "aws_cloudfront_distribution" "image_resizer" {
-  enabled             = true
-  is_ipv6_enabled     = true
-  comment             = "Maestro Metadata Image Resizer"
+  enabled         = true
+  is_ipv6_enabled = true
+  comment         = "Maestro Metadata Image Resizer"
 
   origin {
-    domain_name = "${aws_s3_bucket.user_metadata.bucket_regional_domain_name}"
+    domain_name = aws_s3_bucket.user_metadata.bucket_regional_domain_name
     origin_id   = "maestroresizer"
 
     s3_origin_config {
-      origin_access_identity = "${aws_cloudfront_origin_access_identity.resizer_origin_access_identity.cloudfront_access_identity_path}"
+      origin_access_identity = aws_cloudfront_origin_access_identity.resizer_origin_access_identity.cloudfront_access_identity_path
     }
   }
 
   default_cache_behavior {
-
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "maestroresizer"
@@ -614,53 +602,27 @@ resource "aws_cloudfront_distribution" "image_resizer" {
     min_ttl                = 0
     default_ttl            = 20
     max_ttl                = 60
-
-/* disable the resizer to move it to ahead of time
+    /* disable the resizer to move it to ahead of time
     lambda_function_association {
       event_type   = "origin-response"
       lambda_arn   = "${aws_lambda_function.image_resizer.qualified_arn}"
       include_body = false
     }
 */
-    
   }
 
   viewer_certificate {
     cloudfront_default_certificate = false
-    acm_certificate_arn =  "${data.aws_acm_certificate.omny.arn}"
-    ssl_support_method = "sni-only"
+    acm_certificate_arn            = data.aws_acm_certificate.omny.arn
+    ssl_support_method             = "sni-only"
   }
 
   restrictions {
-      geo_restriction {
-        restriction_type = "none"
-      }
+    geo_restriction {
+      restriction_type = "none"
     }
-
-  aliases = ["${var.metadata_user_bucket}"]
-}
-
-resource "aws_route53_record" "maestro" {
-  name    = "${aws_api_gateway_domain_name.maestro.domain_name}"
-  type    = "A"
-  zone_id = "${var.route53_zone}"
-
-  alias {
-    evaluate_target_health = false
-    name                   = "${aws_api_gateway_domain_name.maestro.regional_domain_name}"
-    zone_id                = "${aws_api_gateway_domain_name.maestro.regional_zone_id}"
   }
-}
 
-resource "aws_route53_record" "maestro_admin" {
-  name    = "${aws_api_gateway_domain_name.maestro_admin.domain_name}"
-  type    = "A"
-  zone_id = "${var.route53_zone}"
-
-  alias {
-    evaluate_target_health = false
-    name                   = "${aws_api_gateway_domain_name.maestro_admin.regional_domain_name}"
-    zone_id                = "${aws_api_gateway_domain_name.maestro_admin.regional_zone_id}"
-  }
+  aliases = [var.metadata_user_bucket]
 }
 

@@ -19,14 +19,14 @@ const MetadataManager = require("./metadata/MetadataManager");
 let port = 3000;
 const portString = process.env.PORT;
 if (portString) {
-    port = parseInt(portString);
+  port = parseInt(portString);
 }
 
 const cors = require("@koa/cors");
 const defaultRouter = new Router();
 app.use(cors());
 
-const {loggingMiddleware, errorHandler,} = require("./impl/logger");
+const { loggingMiddleware, errorHandler, } = require("./impl/logger");
 app.use(loggingMiddleware("Maestro Media Center"));
 app.on("error", errorHandler);
 
@@ -54,21 +54,21 @@ const LocalLogin = require("./apis/LocalLogin");
 const loginRouter = Router({ prefix: "/api/v1.0/login", });
 const loginApi = new LocalLogin(authDB, new SimplePasswordAuth(authDB), loginRouter);
 app.use(async (ctx, next) => {
-    await loginApi.validateAuth(ctx, next);
+  await loginApi.validateAuth(ctx, next);
 });
 app.use(loginRouter.routes());
 app.use(loginRouter.allowedMethods());
 
 app.use(async (ctx, next) => {
-    if(ctx.username) {
-        als.scope();
-        als.set("db", new DynamoDb(dynamoClient, DYNAMO_TABLE, ctx.accountId));
+  if (ctx.username) {
+    als.scope();
+    als.set("db", new DynamoDb(dynamoClient, DYNAMO_TABLE, ctx.accountId));
 
-        if(!ctx.accountId) {
-            ctx.accountId = process.env.MAIN_ACCOUNT;
-        }
-        await next();
+    if (!ctx.accountId) {
+      ctx.accountId = process.env.MAIN_ACCOUNT;
     }
+    await next();
+  }
 });
 
 const metadataManager = new MetadataManager(db);
@@ -78,20 +78,26 @@ const Tmdb = require("./metadata/TheMovieDb");
 const tmdb = new Tmdb(db);
 const metadataFetcher = new S3MetadataFetcher(s3, sns, IMAGE_BUCKET, metadataManager, tmdb);
 
-const metadataRouter = new Router({prefix: "/api/v1.0/metadata",});
+const metadataRouter = new Router({ prefix: "/api/v1.0/metadata", });
 const MetadataApi = require("./apis/admin/Metadata");
 new MetadataApi(metadataRouter, db, metadataFetcher);
 app.use(metadataRouter.routes());
 app.use(metadataRouter.allowedMethods());
 
-if(process.env.RUN_LOCAL) {
-    const server = http.createServer(app.callback());
-    server.listen(port, function listening() {
-        console.log("Listening on %d", server.address().port);
-    });
+const homepageCollectionRouter = new Router({ prefix: "/api/v1.0/homepage_collections", });
+const HomePageCollectionsApi = require("./apis/admin/HomepageCollections");
+new HomePageCollectionsApi(homepageCollectionRouter, db);
+app.use(homepageCollectionRouter.routes());
+app.use(homepageCollectionRouter.allowedMethods());
+
+if (process.env.RUN_LOCAL) {
+  const server = http.createServer(app.callback());
+  server.listen(port, function listening() {
+    console.log("Listening on %d", server.address().port);
+  });
 }
 else {
-    const serverless = require("serverless-http");
-    module.exports.handler = serverless(app);
+  const serverless = require("serverless-http");
+  module.exports.handler = serverless(app);
 }
 
