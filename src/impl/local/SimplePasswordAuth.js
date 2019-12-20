@@ -1,5 +1,8 @@
 const uuid = require("uuid/v4");
-const ttl = 30 * 24 * 60 * 60 * 1000;
+const ttl = 30 * 24 * 60 * 60;
+const resetPercent = 0.1;
+// if we cross the threshold, 10% of the time to expiration we update
+const resetTime = ttl * (1 - resetPercent);
 
 class SimplePasswordAuth {
   constructor(db) {
@@ -7,8 +10,12 @@ class SimplePasswordAuth {
   }
   async getUser(userToken) {
     const user = await this.db.get("user_logins", userToken);
-    user.expires = Date.now() + ttl;
-    await this.db.set(user, "user_logins", userToken);
+
+    if (!user.expires || user.expires < (Date.now() / 1000) + resetTime) {
+      user.expires = Date.now() / 1000 + ttl;
+      await this.db.set(user, "user_logins", userToken);
+    }
+
     return user;
   }
   async createAuthToken(username, accountId) {
