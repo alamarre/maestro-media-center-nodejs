@@ -12,7 +12,7 @@ class SimplePasswordAuth {
     const user = await this.db.get("user_logins", userToken);
 
     if (!user.expires || user.expires < (Date.now() / 1000) + resetTime) {
-      user.expires = Date.now() / 1000 + ttl;
+      user.expires = Math.floor(Date.now() / 1000 + ttl);
       await this.db.set(user, "user_logins", userToken);
     }
 

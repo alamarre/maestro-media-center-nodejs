@@ -50,6 +50,11 @@ exports.handler = async (event) => {
 
     if (message.action == "setId") {
       const { id, } = message;
+      const listenerInfo = await db.get("listener-connections", connectionId);
+      if (listenerInfo) {
+        await db.delete(listenerInfo.accountId, "listening-websockets", listenerInfo.username, listenerInfo.id);
+        await db.delete("listener-connections", connectionId);
+      }
       // store in dynamo
       await db.set({ id, connectionId, }, accountId, "listening-websockets", username, id);
       // alert all connected devices for user
@@ -59,7 +64,14 @@ exports.handler = async (event) => {
       const ids = results.map(r => r.id);
       const senders = await db.list(accountId, "sender-websockets", username);
       for (const sender of senders) {
-        await send(sender.connectionId, JSON.stringify({ "action": "list", ids: ids, }));
+        try {
+          await send(sender.connectionId, JSON.stringify({ "action": "list", ids, }));
+        } catch (e) {
+          if (e.message.indexOf("GoneException") > -1) {
+            console.log("deleting websocket that's gone");
+            await db.delete(accountId, "sender-websockets", username, sender.connectionId);
+          }
+        }
       }
     } else if (message.action == "deregister") {
       const { id, } = message;
@@ -70,7 +82,14 @@ exports.handler = async (event) => {
       const ids = results.map(r => r.id);
       const senders = await db.list(accountId, "sender-websockets", username);
       for (const sender of senders) {
-        await send(sender.connectionId, JSON.stringify({ "action": "list", ids, }));
+        try {
+          await send(sender.connectionId, JSON.stringify({ "action": "list", ids, }));
+        } catch (e) {
+          if (e.message.indexOf("GoneException") > -1) {
+            console.log("deleting websocket that's gone");
+            await db.delete(accountId, "sender-websockets", username, sender.connectionId);
+          }
+        }
       }
     } else if (message.client) {
       const { client, } = message;
