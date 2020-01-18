@@ -11,6 +11,10 @@ class TvShowsApi {
     ctx.body = await this.db.list("user_data", ctx.username, ctx.profile, "tv_shows_keep_watching");
   }
 
+  async listRecentShows(ctx) {
+    ctx.body = await this.db.list("latest_show_episode_added");
+  }
+
   async postShowProgress(ctx) {
     const obj = ctx.request.body;
     obj.lastUpdated = new Date().getTime();
@@ -22,6 +26,7 @@ class TvShowsApi {
   init() {
     this.router.get("/keep-watching", this.listShowsInProgress.bind(this));
     this.router.post("/keep-watching", this.postShowProgress.bind(this));
+    this.router.get("/recent", this.listRecentShows.bind(this));
   }
 }
 

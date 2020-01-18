@@ -26,8 +26,15 @@ exports.handler = async (event, context, callback) => {
                     console.log("adding movie data", movie);
                     const time = new Date().getTime();
                     await db.set({time, movie,} ,"movie_added", `${time}`, movie);
+                } else if (type === "TV Shows") {
+                    const show = parts[0];
+                    const season = parts[1];
+                    const episode = parts[2];
+                    console.log("updating show episode data", show, season, episode);
+                    const time = new Date().getTime();
+                    await db.set({time, show, season, episode} ,"latest_show_episode_added", show);
                 }
-            } 
+            }
         }
 	}));
     callback(null, `Successfully processed ${event.Records.length} records.`);

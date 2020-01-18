@@ -46,3 +46,14 @@ variable "route53_zone" {
   default = "Z2W1P7ODHGBTCH"
 }
 
+variable "cloudflare_email" {
+  type = string
+}
+
+variable "cloudflare_key" {
+  type = string
+}
+
+variable "dns_zone" {
+  type = string
+}
