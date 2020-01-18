@@ -354,10 +354,11 @@ resource "aws_lambda_function" "maestro_web" {
 
   environment {
     variables = {
-      SERVER       = "https://gladiator.omny.ca"
-      BUCKET       = var.bucket
-      DB_BUCKET    = var.db_bucket
-      MAIN_ACCOUNT = var.main_maestro_account
+      SERVER               = "https://gladiator.omny.ca"
+      BUCKET               = var.bucket
+      DB_BUCKET            = var.db_bucket
+      MAIN_ACCOUNT         = var.main_maestro_account
+      ALLOW_ADMIN_READONLY = "true"
     }
   }
 }
@@ -365,7 +366,7 @@ resource "aws_lambda_function" "maestro_web" {
 resource "aws_lambda_function" "maestro_admin_web" {
   function_name    = "maestro-admin-web"
   role             = "arn:aws:iam::990455710365:role/maestro-lambda"
-  handler          = "src/admin-lambda.handler"
+  handler          = "admin-lambda.handler"
   s3_bucket        = aws_s3_bucket.deployment_bucket.id
   s3_key           = aws_s3_bucket_object.object.id
   source_code_hash = data.archive_file.import_lambda_zip.output_base64sha256
@@ -382,6 +383,9 @@ resource "aws_lambda_function" "maestro_admin_web" {
       TMDB_KEY         = var.tmdb_key
       RESIZE_SNS_TOPIC = aws_sns_topic.image_resizer_topic.arn
       IMAGE_BUCKET     = var.metadata_source_bucket
+      CLOUDFLARE_EMAIL = var.cloudflare_email,
+      CLOUDFLARE_KEY   = var.cloudflare_key,
+      DNS_ZONE         = var.dns_zone,
     }
   }
 }
@@ -397,21 +401,6 @@ resource "aws_lambda_function" "image_resizer" {
   timeout          = "30"
   memory_size      = "3008"
   publish          = true
-}
-
-data "aws_acm_certificate" "maestro" {
-  domain      = var.domain
-  types       = ["AMAZON_ISSUED"]
-  most_recent = true
-}
-
-resource "aws_api_gateway_domain_name" "maestro" {
-  domain_name              = var.domain
-  regional_certificate_arn = data.aws_acm_certificate.maestro.arn
-
-  endpoint_configuration {
-    types = ["REGIONAL"]
-  }
 }
 
 resource "aws_api_gateway_rest_api" "maestro" {

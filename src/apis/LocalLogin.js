@@ -45,6 +45,13 @@ class LocalLogin {
         }
         let tokenValue = ctx.headers["X-Maestro-User-Token".toLowerCase()];
         if (typeof tokenValue != "string") {
+          const authHeader = ctx.headers["Authorization".toLowerCase()];
+          if(authHeader && authHeader.length > "Bearer ".length) {
+            tokenValue = authHeader.substring("Bearer ".length);
+          }
+
+        }
+        if (typeof tokenValue != "string") {
             tokenValue = ctx.query["access_token"];
         }
         if (typeof tokenValue != "string") {
@@ -57,7 +64,7 @@ class LocalLogin {
             const loginData = await this.userManager.getUser(token);
             const username = typeof loginData === "object" ? loginData.username : loginData;
 
-            if (username == null) {
+            if (username == null || (loginData.readOnly && ctx.method == "GET")) {
                 ctx.status = 403;
                 ctx.body = JSON.stringify({ "status": "unauthorized", });
                 return;

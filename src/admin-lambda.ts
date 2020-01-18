@@ -1,6 +1,7 @@
 const http = require("http");
 const als = require("async-local-storage");
 als.enable();
+export { };
 
 const Koa = require("koa");
 const Router = require("koa-router");
@@ -37,9 +38,9 @@ const dynamoDb = new UserSpecificDb("db");
 const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
 const db = dynamoDb;
-const globalDynamoDb = new DynamoDb(dynamoClient, DYNAMO_TABLE);
+/*const globalDynamoDb = new DynamoDb(dynamoClient, DYNAMO_TABLE);
 //const globalDb = new MigratingDb(globalDynamoDb, globalS3Db);
-const globalDb = globalDynamoDb;
+//const globalDb = globalDynamoDb;*/
 
 const authDB = new DynamoDb(dynamoClient, DYNAMO_TABLE, "admin_auth");
 
@@ -67,7 +68,11 @@ app.use(async (ctx, next) => {
     if (!ctx.accountId) {
       ctx.accountId = process.env.MAIN_ACCOUNT;
     }
-    await next();
+    try {
+      await next();
+    } catch (e) {
+      console.error(e.message, e.stack);
+    }
   }
 });
 
@@ -89,6 +94,13 @@ const HomePageCollectionsApi = require("./apis/admin/HomepageCollections");
 new HomePageCollectionsApi(homepageCollectionRouter, db);
 app.use(homepageCollectionRouter.routes());
 app.use(homepageCollectionRouter.allowedMethods());
+
+
+const dnsRouter = new Router({ prefix: "/api/v1.0/dns", });
+const DnsApi = require("./apis/admin/Dns");
+new DnsApi(dnsRouter, db);
+app.use(dnsRouter.routes());
+app.use(dnsRouter.allowedMethods());
 
 if (process.env.RUN_LOCAL) {
   const server = http.createServer(app.callback());
