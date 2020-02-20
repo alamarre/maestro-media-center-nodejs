@@ -38,9 +38,6 @@ const dynamoDb = new UserSpecificDb("db");
 const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
 const db = dynamoDb;
-/*const globalDynamoDb = new DynamoDb(dynamoClient, DYNAMO_TABLE);
-//const globalDb = new MigratingDb(globalDynamoDb, globalS3Db);
-//const globalDb = globalDynamoDb;*/
 
 const authDB = new DynamoDb(dynamoClient, DYNAMO_TABLE, "admin_auth");
 
@@ -95,6 +92,14 @@ new HomePageCollectionsApi(homepageCollectionRouter, db);
 app.use(homepageCollectionRouter.routes());
 app.use(homepageCollectionRouter.allowedMethods());
 
+import B2FileSource from './impl/backblaze/B2FileSource'
+const b2FileSource = process.env.BASE_B2_VIDEO_URL ? new B2FileSource(db) : null;
+
+const b2Router = new Router({ prefix: "/api/v1.0/b2", });
+import B2Credentials from "./apis/admin/B2Files";
+new B2Credentials(b2Router, b2FileSource, db);
+app.use(b2Router.routes());
+app.use(b2Router.allowedMethods());
 
 const dnsRouter = new Router({ prefix: "/api/v1.0/dns", });
 const DnsApi = require("./apis/admin/Dns");

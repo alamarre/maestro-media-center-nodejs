@@ -32,7 +32,6 @@ const s3 = new AWS.S3();
 //const globalS3Db = new S3Db(s3, process.env.DB_BUCKET);
 
 import dbFactory from "../database/DbFactory";
-import { fail } from "assert";
 const dynamoDb = new UserSpecificDb("db");
 
 const s3db = new UserSpecificDb("s3db");
@@ -77,8 +76,17 @@ app.use(defaultRouter.allowedMethods());
 const CacheToDynamo = require("../impl/aws/CacheToDynamo");
 const cacheToDynamo = new CacheToDynamo(dynamoDb);
 
+import B2FileSource from '../impl/backblaze/B2FileSource'
+const b2FileSource = process.env.BASE_B2_VIDEO_URL ? new B2FileSource(db) : null;
+
 const DbVideoMapper = require("../impl/aws/DbVideoMapper");
-const videoMapper = new DbVideoMapper(s3db, dynamoDb);
+const videoMapper = new DbVideoMapper(s3db, dynamoDb, b2FileSource);
+
+const b2Router = new Router({ prefix: "/api/v1.0/b2", });
+import B2FilesApi from "../apis/B2Files";
+new B2FilesApi(b2Router, b2FileSource, db);
+app.use(b2Router.routes());
+app.use(b2Router.allowedMethods());
 
 const accountRouter = new Router({ prefix: "/api/v1.0/account", });
 const AccountApi = require("../apis/Account");

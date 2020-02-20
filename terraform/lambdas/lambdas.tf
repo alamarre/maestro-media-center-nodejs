@@ -359,6 +359,7 @@ resource "aws_lambda_function" "maestro_web" {
       DB_BUCKET            = var.db_bucket
       MAIN_ACCOUNT         = var.main_maestro_account
       ALLOW_ADMIN_READONLY = "true"
+      BASE_B2_VIDEO_URL    = "https://videos.al.workers.dev/videos"
     }
   }
 }
@@ -376,16 +377,17 @@ resource "aws_lambda_function" "maestro_admin_web" {
 
   environment {
     variables = {
-      SERVER           = "https://gladiator.omny.ca"
-      BUCKET           = var.bucket
-      DB_BUCKET        = var.db_bucket
-      MAIN_ACCOUNT     = var.main_maestro_account
-      TMDB_KEY         = var.tmdb_key
-      RESIZE_SNS_TOPIC = aws_sns_topic.image_resizer_topic.arn
-      IMAGE_BUCKET     = var.metadata_source_bucket
-      CLOUDFLARE_EMAIL = var.cloudflare_email,
-      CLOUDFLARE_KEY   = var.cloudflare_key,
-      DNS_ZONE         = var.dns_zone,
+      SERVER            = "https://gladiator.omny.ca"
+      BUCKET            = var.bucket
+      DB_BUCKET         = var.db_bucket
+      MAIN_ACCOUNT      = var.main_maestro_account
+      TMDB_KEY          = var.tmdb_key
+      RESIZE_SNS_TOPIC  = aws_sns_topic.image_resizer_topic.arn
+      IMAGE_BUCKET      = var.metadata_source_bucket
+      CLOUDFLARE_EMAIL  = var.cloudflare_email,
+      CLOUDFLARE_KEY    = var.cloudflare_key,
+      DNS_ZONE          = var.dns_zone,
+      BASE_B2_VIDEO_URL = "https://videos.al.workers.dev/videos",
     }
   }
 }

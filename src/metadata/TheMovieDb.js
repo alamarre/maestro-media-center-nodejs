@@ -38,7 +38,7 @@ class TheMovieDb {
     }
 
     canRun() {
-        return typeof TMDB_KEY === "string"; 
+        return typeof TMDB_KEY === "string";
     }
 
     async searchForMovie(movieName) {
@@ -91,7 +91,7 @@ class TheMovieDb {
             searchName = yearMatch[1];
             year = yearMatch[2];
         }
-        
+
         const response = await this.movieDb.searchTv({query: searchName,});
         let results = response.results.filter(m => normalizedMatch(m.name, searchName));
         if(results.length >1 && year != -1) {
