@@ -38,7 +38,7 @@ class FilesApi {
 
     async getVideoSources(ctx) {
         const path = ctx.query.path;
-        const result = await this.storageProvider.getVideoSources(path);
+        const result = await this.storageProvider.getVideoSources(path, ctx);
         ctx.body = result;
     }
 

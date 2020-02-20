@@ -72,6 +72,7 @@ class LocalLogin {
                 ctx.username = username;
                 ctx.accountId = typeof loginData === "object" ? loginData.accountId : null;
                 ctx.profile = ctx.query["profile"];
+                ctx.token = token;
                 logger.addProperties({
                     username, accountId: ctx.accountId || process.env.MAIN_ACCOUNT,
                     profile: ctx.profile,
