@@ -14,7 +14,6 @@ const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const sns = new AWS.SNS();
 
-
 const MetadataManager = require("./metadata/MetadataManager");
 
 let port = 3000;
@@ -76,13 +75,13 @@ app.use(async (ctx, next) => {
 const metadataManager = new MetadataManager(db);
 const IMAGE_BUCKET = process.env.IMAGE_BUCKET;
 const S3MetadataFetcher = require("./metadata/S3MetadataFetcher");
-const Tmdb = require("./metadata/TheMovieDb");
+import Tmdb from "./metadata/TheMovieDb";
 const tmdb = new Tmdb(db);
 const metadataFetcher = new S3MetadataFetcher(s3, sns, IMAGE_BUCKET, metadataManager, tmdb);
 
 const metadataRouter = new Router({ prefix: "/api/v1.0/metadata", });
 const MetadataApi = require("./apis/admin/Metadata");
-new MetadataApi(metadataRouter, db, metadataFetcher);
+new MetadataApi(metadataRouter, db, metadataFetcher, tmdb);
 app.use(metadataRouter.routes());
 app.use(metadataRouter.allowedMethods());
 

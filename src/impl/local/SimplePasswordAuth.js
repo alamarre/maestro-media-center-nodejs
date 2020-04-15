@@ -1,5 +1,6 @@
 const uuid = require("uuid/v4");
-const ttl = 30 * 24 * 60 * 60;
+const envOr = require("env-or");
+const ttl = envOr("LOGIN_EXPIRATION", 12 * 30 * 24 * 60 * 60);
 const resetPercent = 0.1;
 // if we cross the threshold, 10% of the time to expiration we update
 const resetTime = ttl * (1 - resetPercent);

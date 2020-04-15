@@ -453,69 +453,6 @@ resource "aws_api_gateway_deployment" "maestro" {
   stage_name  = "web"
 }
 
-data "aws_acm_certificate" "maestro_admin" {
-  domain      = var.admin_domain
-  types       = ["AMAZON_ISSUED"]
-  most_recent = true
-}
-
-resource "aws_api_gateway_domain_name" "maestro_admin" {
-  domain_name              = var.admin_domain
-  regional_certificate_arn = data.aws_acm_certificate.maestro_admin.arn
-
-  endpoint_configuration {
-    types = ["REGIONAL"]
-  }
-}
-
-resource "aws_api_gateway_rest_api" "maestro_admin" {
-  name        = "maestro_admin"
-  description = "Proxy to handle requests to our API"
-
-  endpoint_configuration {
-    types = ["REGIONAL"]
-  }
-}
-
-resource "aws_api_gateway_resource" "maestro_admin" {
-  rest_api_id = aws_api_gateway_rest_api.maestro_admin.id
-  parent_id   = aws_api_gateway_rest_api.maestro_admin.root_resource_id
-  path_part   = "{proxy+}"
-}
-
-resource "aws_api_gateway_method" "admin_method" {
-  rest_api_id   = aws_api_gateway_rest_api.maestro_admin.id
-  resource_id   = aws_api_gateway_resource.maestro_admin.id
-  http_method   = "ANY"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "maestro_admin" {
-  rest_api_id             = aws_api_gateway_rest_api.maestro_admin.id
-  resource_id             = aws_api_gateway_resource.maestro_admin.id
-  http_method             = aws_api_gateway_method.admin_method.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${aws_lambda_function.maestro_admin_web.arn}/invocations"
-}
-
-resource "aws_lambda_permission" "apigw_lambda_admin" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.maestro_admin_web.arn
-  principal     = "apigateway.amazonaws.com"
-
-  # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
-  source_arn = "${aws_api_gateway_rest_api.maestro_admin.execution_arn}/*/*/*"
-}
-
-resource "aws_api_gateway_deployment" "maestro_admin" {
-  depends_on = [aws_api_gateway_integration.maestro_admin]
-
-  rest_api_id = aws_api_gateway_rest_api.maestro_admin.id
-  stage_name  = "web"
-}
-
 data "aws_acm_certificate" "omny" {
   domain      = "*.omny.ca"
   types       = ["AMAZON_ISSUED"]
@@ -593,13 +530,6 @@ resource "aws_cloudfront_distribution" "image_resizer" {
     min_ttl                = 0
     default_ttl            = 20
     max_ttl                = 60
-    /* disable the resizer to move it to ahead of time
-    lambda_function_association {
-      event_type   = "origin-response"
-      lambda_arn   = "${aws_lambda_function.image_resizer.qualified_arn}"
-      include_body = false
-    }
-*/
   }
 
   viewer_certificate {
