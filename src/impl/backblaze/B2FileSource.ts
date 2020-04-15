@@ -25,7 +25,8 @@ export default class B2FileSource {
   }
 
   async getSignedUrl(bucket: string, file: string, token: string): Promise<string> {
-    return `${BASE_B2_VIDEO_URL}/${bucket}/${file}?access_token=${token}`;
+    const info = await this.getInfoForUrl(bucket, file);
+    return `${BASE_B2_VIDEO_URL}/${bucket}/${file}?video=${encodeURIComponent(info.url)}&downloadToken=${encodeURIComponent(info.downloadToken)}`;
   }
 
   async getBuckets(): Promise<any> {
