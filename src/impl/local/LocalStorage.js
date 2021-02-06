@@ -17,6 +17,28 @@ class LocalStorage {
     }
 
     watchFolderForChanges(folder, addCallback, deleteCallback) {
+      // need to handle recursive for non mac and Windows later
+      fs.watch(folder.path, {recursive: true,}, function(event, filename) {
+          if(filename.indexOf(".DS_Store") < 0) {
+              const root = folder.path.replace(/\\/g, "/");
+              const normalizedFile = filename.replace(/\\/g, "/");
+              let relativeFile = normalizedFile.indexOf(root) == 0 ? normalizedFile.substring(folder.path.length) : normalizedFile;
+              if(relativeFile.indexOf("/")==0) {
+                  relativeFile = relativeFile.substring(1);
+              }
+              if(fs.existsSync(`${folder.path}/${relativeFile}`)) {
+                if(fs.lstatSync(`${folder.path}/${relativeFile}`).isDirectory()) {
+                  return console.log(`detected, but ignoring folder ${folder.path}/${relativeFile}`);
+                }
+                addCallback(folder, relativeFile);
+              } else {
+                deleteCallback(folder, relativeFile);
+              }
+          }
+      });
+  }
+
+    watchFolderForChangesLegacy(folder, addCallback, deleteCallback) {
         // need to handle recursive for non mac and Windows later
         watch(folder.path, {recursive: true,}, function(event, filename) {
             if(filename.indexOf(".DS_Store") < 0) {

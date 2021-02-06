@@ -39,7 +39,7 @@ class SimplePasswordAuth {
   }
   async createAuthToken(username, accountId) {
     const token = uuid();
-    await this.db.set({ username, accountId, expires: Date.now() + ttl, }, "user_logins", token);
+    await this.db.set({ username, accountId, expires: Date.now()/1000 + ttl, }, "user_logins", token);
     return token;
   }
 }

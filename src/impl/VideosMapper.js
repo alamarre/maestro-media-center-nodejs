@@ -41,8 +41,11 @@ class VideosMapper {
         };
     }
 
-    listenForChanges(f) {
+    listenForChanges(f, d) {
         videoEmitter.on("newFile", (rootFolderName, relativePath, scanned) => f(rootFolderName, relativePath, scanned));
+        if(d) {
+          videoEmitter.on("removeFile", (rootFolderName, path) => d(rootFolderName, path, this.scanned));
+        }
     }
 
     scanIndexedFolders() {
@@ -79,7 +82,7 @@ class VideosMapper {
     }
 
     handleFolderAddEvent(folder, file) {
-        console.log(`detected addition of ${file} in ${folder.name}`);
+
         const isFile = fs.lstatSync(folder.path + "/" + file).isFile();
         if (isFile) {
             this.addFileToCache(folder.name, file);
@@ -110,8 +113,9 @@ class VideosMapper {
             delete parentFolder.folders[filename];
         } else if (parentFolder.files[filename]) {
             delete parentFolder.files[filename];
+            videoEmitter.emit("removeFile", folder.name, file);
         }
-    }
+      }
 
     scanFoldersUsingQueue(rootFolder) {
         this.cachedFolders.folders[rootFolder.name] = { "files": {}, "folders": {}, };
@@ -155,10 +159,13 @@ class VideosMapper {
 
         const pathParts = relativePath.split("/");
         if (!parent.files[pathParts[pathParts.length - 1]]) {
+            if(this.scanned) {
+              console.log(`detected addition of ${rootFolderName} in ${relativePath}`);
+            }
             videoEmitter.emit("newFile", rootFolderName, relativePath, this.scanned);
         }
         parent.files[pathParts[pathParts.length - 1]] = relativePath;
-    } 
+    }
 
     getParent(rootFolderName, relativePath) {
         if (relativePath.indexOf("/") == 0) {

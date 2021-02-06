@@ -68,7 +68,7 @@ export default class TheMovieDb implements IMetadataProvider {
     const response = await this.movieDb.searchMovie({ query: searchName, });
     let results = response.results.filter(m => normalizedMatch(m.title, searchName));
     if (results.length > 1 && year != -1) {
-      const filtered = results.filter(r => r.release_date.startsWith(year));
+      const filtered = results.filter(r => r.release_date && r.release_date.startsWith(year));
       if (filtered.length === 1) {
         results = filtered;
       }
@@ -122,7 +122,7 @@ export default class TheMovieDb implements IMetadataProvider {
     const response = await this.movieDb.searchTv({ query: searchName, });
     let results = response.results.filter(m => normalizedMatch(m.name, searchName));
     if (results.length > 1 && year != -1) {
-      const filtered = results.filter(r => r.first_air_date.startsWith(year));
+      const filtered = results.filter(r => r.first_air_date && r.first_air_date.startsWith(year));
       if (filtered.length === 1) {
         results = filtered;
       }

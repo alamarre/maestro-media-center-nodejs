@@ -18,7 +18,7 @@ class LogWrapper {
     addProperties(properties) {
         const currentProperties = asyncLocalStorage.get("logProperties") || [];
         asyncLocalStorage.set("logProperties", Object.assign(currentProperties, properties));
-    } 
+    }
 
     getAllProperties(properties) {
 		const requestProperties = asyncLocalStorage.get("logProperties");
@@ -61,8 +61,9 @@ const loggingMiddleware = (name) => {
 		const requestProperties = { requestId, userAgent: ctx.headers["user-agent"], };
 		asyncLocalStorage.set("logProperties", requestProperties);
 
-		logger.info("received request", { path, method, });
-		await next();
+    logger.info("received request", { path, method, });
+    logger.info("headers", { headers: ctx.headers, });
+    await next();
 
 		const status = ctx.status;
 		logger.info("sending response", { status, path, });

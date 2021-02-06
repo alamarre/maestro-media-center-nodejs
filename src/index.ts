@@ -104,7 +104,7 @@ new MetadataApi(metadataRouter, metaDataManager);
 app.use(metadataRouter.routes());
 app.use(metadataRouter.allowedMethods());
 
-const TheMovieDb = require("./metadata/TheMovieDb");
+import TheMovieDb from "./metadata/TheMovieDb";
 const theMovieDb = new TheMovieDb(db);
 if (theMovieDb.canRun()) {
   const backgroundMetadataFetcher = new BackgroundMetadataFetcher(videoMapper, metaDataManager, theMovieDb, db);

@@ -14,6 +14,7 @@ const b2FinishLargeFile = '/b2api/v2/b2_finish_large_file';
 const EXPIRATION_TIME = 7 * 24 * 60 * 60;
 
 const BASE_B2_VIDEO_URL = process.env.BASE_B2_VIDEO_URL;
+const DIRECT_LINK = true;
 
 function toBase64(value: string) {
   return Buffer.from(value).toString("base64");
