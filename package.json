@@ -10,7 +10,7 @@
     "@types/react": "^16.9.17",
     "builtin-modules": "^3.0.0",
     "eslint": "^5.2.0",
-    "nodemon": "^1.11.0",
+    "nodemon": "^1.19.4",
     "source-map-loader": "^0.2.4",
     "ts-loader": "^5.4.5",
     "typescript": "^3.7.4"
@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@koa/cors": "2",
+    "@types/koa-router": "^7.4.1",
     "async-local-storage": "^2.3.1",
     "aws-sdk": "^2.488.0",
     "bcryptjs": "^2.4.3",
@@ -39,9 +40,11 @@
     "node-fetch": "^2.3.0",
     "node-watch": "^0.5.5",
     "nodejs-websocket": "^1.7.1",
+    "reflect-metadata": "^0.1.13",
     "send-seekable": "^1.0.4",
     "serverless-http": "^1.8.0",
     "source-map-support": "^0.5.11",
+    "tsyringe": "^4.4.0",
     "uuid": "^3.1.0",
     "winston": "^3.1.0"
   }

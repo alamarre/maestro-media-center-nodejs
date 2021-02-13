@@ -48,7 +48,7 @@ class FileBasedDb {
                         results.push(JSON.parse(fs.readFileSync(path)));
                     }
                     catch (e) {
-                        console.error(e);
+                        //console.error(e);
                     }
                 }
             }

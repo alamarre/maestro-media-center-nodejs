@@ -4,6 +4,12 @@ const http = require("http");
 const als = require("async-local-storage");
 als.enable();
 
+import "reflect-metadata";
+import { container } from "tsyringe";
+import HMRootApi from "../apis/hm/HMRootApi";
+import HMVideosApi from "../apis/hm/HMVideosApi";
+import { HMCollectionPath, HMCollectionRoot, HMRootPath, HMVideosRoot } from "../apis/hm/Links";
+
 const Koa = require("koa");
 const Router = require("koa-router");
 const bodyParser = require("koa-bodyparser");
@@ -59,8 +65,9 @@ app.use(async (ctx, next) => {
     if (!ctx.accountId) {
       ctx.accountId = process.env.MAIN_ACCOUNT;
     }
-    await next();
+
   }
+  await next();
 });
 
 
@@ -95,6 +102,8 @@ app.use(accountRouter.routes());
 app.use(accountRouter.allowedMethods());
 
 import CategoryRestriction from "../parentalcontrol/CategoryRestriction";
+import IDatabase from "../database/IDatabase";
+import HMCollectionsApi from "../apis/hm/HMCollectionsApi";
 const categoryDb = s3db;
 const categoryRestriction = new CategoryRestriction(db, categoryDb);
 
@@ -154,6 +163,23 @@ const MetadataApi = require("../apis/Metadata");
 new MetadataApi(metadataRouter, metaDataManager);
 app.use(metadataRouter.routes());
 app.use(metadataRouter.allowedMethods());
+
+function mapApi(api, prefix: string) {
+  const apiRouter = new Router({ prefix });
+  api.init(apiRouter);
+  app.use(apiRouter.routes());
+  app.use(apiRouter.allowedMethods());
+}
+container.register<IDatabase>("IDatabase", { useValue: db });
+
+const hmRootApi = container.resolve(HMRootApi);
+mapApi(hmRootApi, HMRootPath);
+
+const hmVideoApi = container.resolve(HMVideosApi);
+mapApi(hmVideoApi, HMVideosRoot);
+
+const hmCollectionApi = container.resolve(HMCollectionsApi);
+mapApi(hmCollectionApi, HMCollectionRoot);
 
 const serverless = require("serverless-http");
 module.exports.handler = serverless(app);

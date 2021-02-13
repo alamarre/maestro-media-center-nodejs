@@ -55,6 +55,10 @@ class LocalLogin {
             tokenValue = ctx.query["access_token"];
         }
         if (typeof tokenValue != "string") {
+            if(ctx.path == "/api/hm") {
+              await next();
+              return;
+            }
             ctx.status = 401;
             ctx.body = JSON.stringify({ "status": "unauthenticated", });
             return;

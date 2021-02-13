@@ -1,8 +1,9 @@
 const http = require("http");
 
 const Koa = require("koa");
-const Router = require("koa-router");
 const bodyParser = require("koa-bodyparser");
+
+import Router = require("koa-router");
 
 const app = new Koa();
 app.use(bodyParser());
@@ -24,7 +25,7 @@ const localStorage = new LocalStorage(db);
 
 const SimplePasswordAuth = require("./impl/local/SimplePasswordAuth");
 const LocalLogin = require("./apis/LocalLogin");
-const loginRouter = Router({ prefix: "/api/v1.0/login", });
+const loginRouter = new Router({ prefix: "/api/v1.0/login", });
 const loginApi = new LocalLogin(db, new SimplePasswordAuth(db), loginRouter);
 app.use(async (ctx, next) => {
   await loginApi.validateAuth(ctx, next);
