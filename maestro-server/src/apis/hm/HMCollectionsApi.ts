@@ -32,6 +32,7 @@ export default class HMCollectionsApi {
         const result = {
           class: ["collection-item"],
           links: [],
+          entities: [],
           properties: {
             availableStartDate: v.availableStartDate,
             availableEndDate: v.availableEndDate,
@@ -47,14 +48,12 @@ export default class HMCollectionsApi {
         }
 
         if (v.childCollectionId) {
-          result.links.push(HMCollectionLink(v.childCollectionId, "child-collection")
+          result.entities.push(HMCollectionLink(ctx.profile, v.childCollectionId, "child-collection")
           );
         }
         return result;
       })
     };
-
-
 
     ctx.body = response;
   }

@@ -7,17 +7,27 @@ export const RootLink: HMLink = { rel: ["root"], href: canonicalize(HMRootPath) 
 export const HMVideosRoot: string = HMRootPath.concat("/videos");
 export const HMVideoLink: HMLink = { rel: ["videos"], href: canonicalize(HMVideosRoot) };
 
+export const HMProfilesRoot: string = HMRootPath.concat("/profiles");
+export const HMProfilesLink: HMLink = { rel: ["profiles"], href: canonicalize(HMProfilesRoot) };
 
+export const HMProfileRoot: string = HMRootPath.concat("/profiles/:profile");
+export const HMProfileLink = (profileName: string): HMLink => {
+  return {
+    rel: ["profile"],
+    href: canonicalize(mapPath(HMProfileRoot, { profile: profileName }))
+  }
+};
 
 export const HMHomePageCollection: string = HMRootPath.concat("/homepage/collections");
 export const HMHomePageCollectionLink: HMLink = { rel: ["homepage-collections"], href: canonicalize(HMHomePageCollection) };
 
-export const HMCollectionRoot: string = HMRootPath.concat("/collections");
+export const HMCollectionRoot: string = HMRootPath.concat("/:profile/collections");
 export const HMCollectionPath: string = HMCollectionRoot.concat("/:collectionId");
-export const HMCollectionLink = (collectionId: string, collectionType: string): HMLink => {
+
+export const HMCollectionLink = (profile: string, collectionId: string, collectionType: string): HMLink => {
   return {
     rel: [collectionType],
-    href: canonicalize(mapPath(HMCollectionPath, { collectionId }))
+    href: canonicalize(mapPath(HMCollectionPath, { profile, collectionId }))
   }
 };
 
@@ -27,6 +37,12 @@ function mapPath(pattern, params): string {
     result = result.replace(`:${key}`, params[key]);
   }
   return result;
+}
+
+export function makeSelfLink(link: HMLink): HMLink {
+  const selfLink: HMLink = Object.assign({}, link);
+  selfLink.rel = ["self"];
+  return selfLink;
 }
 
 export const HMVideoInfoPath: string = HMVideosRoot.concat("/:type/:videoId");

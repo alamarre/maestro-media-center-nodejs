@@ -2,7 +2,7 @@ import Router = require("koa-router");
 import { autoInjectable, singleton } from "tsyringe";
 import HMObject from "../../models/HMObject";
 import canonicalize from "./canonicalize";
-import { HMCollectionLink, HMVTvShowSourceLink } from "./Links";
+import { HMCollectionLink, HMProfilesLink, HMVTvShowSourceLink } from "./Links";
 
 @singleton()
 @autoInjectable()
@@ -12,7 +12,7 @@ export default class HMRootApi {
 
   get(ctx) {
     const response: HMObject = {
-      links: [HMVTvShowSourceLink("test", "a", "b")],
+      links: [],
       class: ["root"],
       actions: []
     };
@@ -26,7 +26,7 @@ export default class HMRootApi {
           method: "POST"
         });
     } else {
-      response.links.push(HMCollectionLink("homepage_collections", "homepage-collections"));
+      response.links.push(HMProfilesLink);
     }
     ctx.body = response;
   }

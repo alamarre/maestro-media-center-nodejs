@@ -21,8 +21,9 @@ export class HMAction {
 
 export default class HMObject {
   links?: HMLink[];
-  entities?: HMObject[];
+  entities?: (HMObject | HMLink)[];
   href?: string;
+  rel?: string[];
   class: string[];
   properties?: { [key: string]: Object | Object[] };
   actions?: HMAction[];

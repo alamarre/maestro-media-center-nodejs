@@ -13,12 +13,15 @@
     "nodemon": "^1.19.4",
     "source-map-loader": "^0.2.4",
     "ts-loader": "^5.4.5",
+    "ts-node": "^9.1.1",
     "typescript": "^3.7.4"
   },
   "scripts": {
-    "start": "nodemon --exec ./node_modules/.bin/ts-node -- ./index.ts",
+    "start": "nodemon --inspect=5858 --exec ./node_modules/.bin/ts-node -- ./index.ts",
     "build": "NODE_ENV=production; tsc && cp -f package.json out/package.json && cd out && npm i --production",
-    "test": "mocha"
+    "test": "mocha",
+    "watch": "tsc --watch",
+    "watch:debug": "nodemon --inspect=5858 -e ts,tsx --exec node -r ts-node/register ./src/lambdas/server.ts"
   },
   "dependencies": {
     "@koa/cors": "2",

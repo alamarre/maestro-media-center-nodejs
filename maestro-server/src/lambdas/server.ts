@@ -8,11 +8,12 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import HMRootApi from "../apis/hm/HMRootApi";
 import HMVideosApi from "../apis/hm/HMVideosApi";
-import { HMCollectionPath, HMCollectionRoot, HMRootPath, HMVideosRoot } from "../apis/hm/Links";
+import { HMCollectionPath, HMCollectionRoot, HMProfilesRoot, HMRootPath, HMVideosRoot } from "../apis/hm/Links";
 
 const Koa = require("koa");
 const Router = require("koa-router");
 const bodyParser = require("koa-bodyparser");
+
 
 const app = new Koa();
 app.use(bodyParser());
@@ -104,6 +105,7 @@ app.use(accountRouter.allowedMethods());
 import CategoryRestriction from "../parentalcontrol/CategoryRestriction";
 import IDatabase from "../database/IDatabase";
 import HMCollectionsApi from "../apis/hm/HMCollectionsApi";
+import HMProfilesApi from "../apis/hm/HMProfilesApi";
 const categoryDb = s3db;
 const categoryRestriction = new CategoryRestriction(db, categoryDb);
 
@@ -181,6 +183,9 @@ mapApi(hmVideoApi, HMVideosRoot);
 const hmCollectionApi = container.resolve(HMCollectionsApi);
 mapApi(hmCollectionApi, HMCollectionRoot);
 
+const hmProfilesApi = container.resolve(HMProfilesApi);
+mapApi(hmProfilesApi, HMProfilesRoot);
+
 const serverless = require("serverless-http");
 module.exports.handler = serverless(app);
 
@@ -199,6 +204,7 @@ if (process.env.IS_CLOUDFLARE) {
 
 if (process.env.RUN_LOCAL) {
   const server = http.createServer(app.callback());
+
   server.listen(port, function listening() {
     console.log("Listening on %d", server.address().port);
   });
