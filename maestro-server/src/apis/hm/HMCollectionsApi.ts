@@ -4,7 +4,7 @@ import CollectionItem from "../../features/collections/CollectionItem";
 import CollectionManager from "../../features/collections/CollectionManager";
 import HMObject from "../../models/HMObject";
 import canonicalize from "./canonicalize";
-import { HMCollectionLink } from "./Links";
+import { HMCollectionLink, makeSelfLink } from "./Links";
 
 @singleton()
 @autoInjectable()
@@ -25,13 +25,16 @@ export default class HMCollectionsApi {
     }
 
     const response: HMObject = {
-      links: [],
+      links: [
+        makeSelfLink(HMCollectionLink(ctx.profile, collectionId, "collection"))
+      ],
       class: ["collection"],
       actions: [],
       entities: children.map((v): HMObject => {
         const result = {
           class: ["collection-item"],
           links: [],
+          rel: ["item"],
           entities: [],
           properties: {
             availableStartDate: v.availableStartDate,
@@ -48,8 +51,9 @@ export default class HMCollectionsApi {
         }
 
         if (v.childCollectionId) {
-          result.entities.push(HMCollectionLink(ctx.profile, v.childCollectionId, "child-collection")
-          );
+          const link = HMCollectionLink(ctx.profile, v.childCollectionId, "child-collection");
+          link.rel = ["item"];
+          result.entities.push(link);
         }
         return result;
       })

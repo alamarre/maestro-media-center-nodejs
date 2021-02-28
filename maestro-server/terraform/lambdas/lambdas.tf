@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = "terraform.omny.ca"
+    bucket  = var.terraform_bucket
     profile = "maestro-terraform"
     key     = "lambdas"
     region  = "us-east-1"
@@ -8,9 +8,8 @@ terraform {
 }
 
 provider "aws" {
-  region              = "us-east-1"
-  profile             = "maestro-terraform"
-  allowed_account_ids = ["990455710365"]
+  region  = "us-east-1"
+  profile = "maestro-terraform"
 }
 
 data "aws_region" "current" {

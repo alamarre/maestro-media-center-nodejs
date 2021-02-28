@@ -3,6 +3,7 @@
     "target": "ES2019",
     "module": "commonjs",
     "moduleResolution": "node",
+    "skipLibCheck": true,
     "outDir": "out",
     "rootDir": "src",
     "allowJs": true,
@@ -18,7 +19,7 @@
     "src/**/*"
   ],
   "exclude": [
-    "node_modules",
+    "./node_modules/**",
     "typings"
   ]
 }

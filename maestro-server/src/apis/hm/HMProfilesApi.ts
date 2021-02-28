@@ -30,7 +30,7 @@ export default class HMProfilesApi {
     const profiles = await this.db.list("profiles", ctx.username);
     const response: HMObject = {
       class: ["profiles"],
-      links: [],
+      links: [makeSelfLink(HMProfilesLink)],
       entities: profiles.map(p => makeSelfLink(HMProfileLink(p["profileName"]))),
     };
 
@@ -41,7 +41,6 @@ export default class HMProfilesApi {
     const profileName = ctx.params.profile;
     const profile = await this.db.get("profiles", ctx.username, profileName);
     const response = this.formatProfile(profile);
-
 
     response.links.push(HMCollectionLink(profileName, "homepage_collections", "homepage-collections"));
     ctx.body = response;

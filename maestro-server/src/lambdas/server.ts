@@ -14,7 +14,6 @@ const Koa = require("koa");
 const Router = require("koa-router");
 const bodyParser = require("koa-bodyparser");
 
-
 const app = new Koa();
 app.use(bodyParser());
 import AWS = require("aws-sdk");
@@ -47,19 +46,12 @@ const db = dynamoDb;
 const globalDynamoDb = dbFactory();
 const globalDb = globalDynamoDb;
 
-const SimplePasswordAuth = require("../impl/local/SimplePasswordAuth");
-const LocalLogin = require("../apis/LocalLogin");
-const loginRouter = Router({ prefix: "/api/v1.0/login", });
-const loginApi = new LocalLogin(globalDb, new SimplePasswordAuth(globalDb), loginRouter);
-app.use(async (ctx, next) => {
-  await loginApi.validateAuth(ctx, next);
-});
-app.use(loginRouter.routes());
-app.use(loginRouter.allowedMethods());
-
-app.use(async (ctx, next) => {
+const loginMiddleWare = async (ctx, next) => {
+  await loginApi.validateAuth(ctx, async () => { });
   if (ctx.username) {
     als.scope();
+    als.set("username", ctx.username);
+    als.set("profile", ctx.profile);
     als.set("db", dbFactory(ctx.accountId));
     als.set("s3db", new S3Db(s3, process.env.DB_BUCKET, ctx.accountId));
 
@@ -69,7 +61,19 @@ app.use(async (ctx, next) => {
 
   }
   await next();
-});
+};
+
+const SimplePasswordAuth = require("../impl/local/SimplePasswordAuth");
+const LocalLogin = require("../apis/LocalLogin");
+const loginRouter = Router({ prefix: "/api/v1.0/login", });
+const loginApi = new LocalLogin(globalDb, new SimplePasswordAuth(globalDb), loginRouter);
+
+loginRouter.use(loginMiddleWare);
+app.use(loginRouter.routes());
+app.use(loginRouter.allowedMethods());
+
+
+//app.use();
 
 
 const healthApi = require("../apis/Health");
@@ -106,6 +110,12 @@ import CategoryRestriction from "../parentalcontrol/CategoryRestriction";
 import IDatabase from "../database/IDatabase";
 import HMCollectionsApi from "../apis/hm/HMCollectionsApi";
 import HMProfilesApi from "../apis/hm/HMProfilesApi";
+import ICollectionPlugin from "../features/collections/ICollectionPlugin";
+import KeepWatchingCollectionPlugin from "../features/collections/plugins/KeepWatchingCollectionPlugin";
+import IUserContext from "../features/users/IUserContext";
+import UserContext from "../features/users/UserContext";
+import NewMoviesCollectionPlugin from "../features/collections/plugins/NewMoviesCollectionPlugin";
+import VideoCacheCollection from "../features/collections/plugins/VideoCacheCollection";
 const categoryDb = s3db;
 const categoryRestriction = new CategoryRestriction(db, categoryDb);
 
@@ -168,10 +178,21 @@ app.use(metadataRouter.allowedMethods());
 
 function mapApi(api, prefix: string) {
   const apiRouter = new Router({ prefix });
+  apiRouter.use(loginMiddleWare);
+  apiRouter.param("profile", async (profile, ctx, next) => {
+    ctx.profile = profile;
+    als.set("profile", profile);
+    await next();
+  })
   api.init(apiRouter);
   app.use(apiRouter.routes());
   app.use(apiRouter.allowedMethods());
 }
+
+container.register<ICollectionPlugin>("ICollectionPlugin", KeepWatchingCollectionPlugin);
+container.register<ICollectionPlugin>("ICollectionPlugin", NewMoviesCollectionPlugin);
+container.register<ICollectionPlugin>("ICollectionPlugin", VideoCacheCollection);
+container.register<IUserContext>("IUserContext", UserContext);
 container.register<IDatabase>("IDatabase", { useValue: db });
 
 const hmRootApi = container.resolve(HMRootApi);
