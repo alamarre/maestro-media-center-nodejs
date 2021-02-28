@@ -1,7 +1,3 @@
-variable "terraform_bucket" {
-  default = "terraform.omny.ca"
-}
-
 variable "bucket" {
   default = "record.videos.omny.ca"
 }

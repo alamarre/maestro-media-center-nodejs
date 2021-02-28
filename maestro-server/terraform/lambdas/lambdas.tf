@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = var.terraform_bucket
+    bucket  = "terraform.omny.ca"
     profile = "maestro-terraform"
     key     = "lambdas"
     region  = "us-east-1"
