@@ -8,7 +8,7 @@ enum HTTP_METHODS {
 type HttpMethod = keyof typeof HTTP_METHODS;
 
 export class HMLink {
-  rels: string[];
+  rel: string[];
   href: string;
 }
 
