@@ -25,4 +25,4 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: Build
       run: npm run build
-      working_directory: maestro-server
+      working-directory: maestro-server
