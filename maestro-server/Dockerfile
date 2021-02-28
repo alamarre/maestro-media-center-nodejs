@@ -1,15 +1,14 @@
-FROM node:8
+FROM public.ecr.aws/lambda/nodejs:14
 
-RUN mkdir -p /opt/maestro
-WORKDIR /opt/maestro
-
-ADD package.json .
-
-VOLUME ["/opt/maestro/db", "/Movies"]
-
-RUN npm install --production
+RUN mkdir build
+WORKDIR build
+ADD package.json ./
+RUN npm i
+ADD tsconfig.json ./
 ADD src ./src
+RUN mkdir out
+RUN npm run build
+RUN cp -r out/* /var/task
+WORKDIR /var/task
 
-EXPOSE 3000
-
-ENTRYPOINT ["node", "src/index.js"]
+CMD [ "lambdas/server.handler" ]

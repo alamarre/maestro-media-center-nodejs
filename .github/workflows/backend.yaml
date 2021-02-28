@@ -29,3 +29,14 @@ jobs:
     - name: Build
       run: npm run build
       working-directory: maestro-server
+  
+  build-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the docker container
+      run: docker build -t maestro-server-lambda .
+      working-directory: maestro-server
+    
+
