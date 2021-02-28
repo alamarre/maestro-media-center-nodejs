@@ -1,0 +1,52 @@
+{
+  "name": "maestro-media-center-typescript",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "repository": "git@github.com:alamarre/maestro-media-center-typescript.git",
+  "author": "Al Lamarre <alamarre@gmail.com>",
+  "license": "AGPL",
+  "devDependencies": {
+    "@types/node": "^11.13.17",
+    "builtin-modules": "^3.0.0",
+    "eslint": "^5.2.0",
+    "nodemon": "^1.19.4",
+    "source-map-loader": "^0.2.4",
+    "ts-loader": "^5.4.5",
+    "ts-node": "^9.1.1",
+    "typescript": "^3.7.4"
+  },
+  "scripts": {
+    "start": "nodemon --inspect=5858 --exec ./node_modules/.bin/ts-node -- ./index.ts",
+    "build": "NODE_ENV=production; tsc && cp -f package.json out/package.json && cd out && npm i --production",
+    "test": "mocha",
+    "watch": "tsc --watch",
+    "watch:debug": "nodemon --inspect=5858 -e ts,tsx --exec node -r ts-node/register ./src/lambdas/server.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.7.0",
+    "@koa/cors": "2",
+    "@types/koa-router": "^7.4.1",
+    "async-local-storage": "^2.3.1",
+    "aws-sdk": "^2.488.0",
+    "bcryptjs": "^2.4.3",
+    "cloudflare": "^2.7.0",
+    "env-or": "^1.0.2",
+    "http": "^0.0.0",
+    "jimp": "^0.6.0",
+    "koa": "^2.6.2",
+    "koa-bodyparser": "^4.2.1",
+    "koa-router": "^7.4.0",
+    "mkdirp": "^0.5.1",
+    "moviedb-promise": "^1.4.1",
+    "node-fetch": "^2.3.0",
+    "node-watch": "^0.5.5",
+    "nodejs-websocket": "^1.7.1",
+    "reflect-metadata": "^0.1.13",
+    "send-seekable": "^1.0.4",
+    "serverless-http": "^1.8.0",
+    "source-map-support": "^0.5.11",
+    "tsyringe": "^4.4.0",
+    "uuid": "^3.1.0",
+    "winston": "^3.1.0"
+  }
+}

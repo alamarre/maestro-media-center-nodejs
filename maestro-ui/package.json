@@ -1,0 +1,39 @@
+{
+  "name": "maestro-media-center-ui",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "repository": "git@github.com:alamarre/maestro-media-center-typescript.git",
+  "author": "Al Lamarre <alamarre@gmail.com>",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "@types/expect": "^24.3.0",
+    "@types/mocha": "^8.2.0",
+    "@types/node": "^11.13.17",
+    "@types/siren-parser": "^8.4.0",
+    "builtin-modules": "^3.0.0",
+    "es-dev-server": "^2.1.0",
+    "eslint": "^5.2.0",
+    "mocha": "^8.3.0",
+    "source-map-loader": "^0.2.4",
+    "ts-loader": "^5.4.5",
+    "ts-mocha": "^8.0.0",
+    "ts-node": "^9.1.1",
+    "typescript": "^3.9.9",
+    "typescript-lit-html-plugin": "^0.9.0"
+  },
+  "scripts": {
+    "build": "NODE_ENV=production; tsc && cp -f package.json out/package.json && cd out && npm i --production",
+    "dev:build": "tsc --watch",
+    "dev:server": "es-dev-server --app-index local.html --node-resolve --watch",
+    "dev:run": "npm run dev:build & npm run dev:server",
+    "test": "TS_NODE_PROJECT=\"tsconfig.testing.json\" mocha -r ts-node/register src/tests/**/*.spec.ts"
+  },
+  "dependencies": {
+    "lit-element": "^2.4.0",
+    "lit-html": "^1.3.0",
+    "reflect-metadata": "^0.1.13",
+    "siren-parser": "^8.4.0",
+    "tsyringe": "^4.4.0",
+    "uuid": "^3.1.0"
+  }
+}
