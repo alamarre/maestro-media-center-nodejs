@@ -74,5 +74,6 @@ jobs:
     - name: Terraform Init
       id: init
       run: terraform init
+      working-directory: maestro-server/terraform/lambdas
     
 
