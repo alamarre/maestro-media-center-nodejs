@@ -25,8 +25,7 @@
     "dev:build": "tsc --watch",
     "dev:server": "es-dev-server --app-index local.html --node-resolve --watch",
     "dev:run": "npm run dev:build & npm run dev:server",
-    "test": "TS_NODE_PROJECT=\"tsconfig.testing.json\" mocha -r ts-node/register src/tests/**/*.spec.ts",
-    "test2": "ts-mocha -p ./tsconfig.json ./src/tests/**/*.spec.ts"
+    "test": "TS_NODE_PROJECT=\"tsconfig.testing.json\" mocha -r ts-node/register src/tests/**/*.spec.ts"
   },
   "dependencies": {
     "@types/siren-parser": "^8.4.0",
