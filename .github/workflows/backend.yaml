@@ -47,11 +47,11 @@ jobs:
       TF_VAR_access_token: ${{ secrets.ACCESS_TOKEN }}
       TF_VAR_tmdb_key: ${{ secrets.TMDB_KEY }}
       TF_VAR_main_maestro_account: ${{ secrets.MAESTRO_MAIN_ACCOUNT }}
-
       TF_VAR_cloudflare_email: ${{ secrets.CLOUDFLARE_EMAIL }}
       TF_VAR_cloudflare_key: ${{ secrets.CLOUDFLARE_KEY }}
       TF_VAR_dns_zone: ${{ secrets.DNS_ZONE }}
-
+    
+    steps:
     - uses: actions/checkout@v2
     - name: Use Node.js 12.x
       uses: actions/setup-node@v1
