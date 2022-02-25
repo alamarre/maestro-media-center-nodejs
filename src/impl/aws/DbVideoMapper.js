@@ -1,3 +1,7 @@
+const { URL, } = require("url");
+
+const cf = require("aws-cloudfront-sign");
+
 class DbVideoLister {
 
     constructor(db, sourcesDb, b2FileSource) {
@@ -47,6 +51,22 @@ class DbVideoLister {
             const [, bucket, file,] = s.split(":");
             if(this.b2FileSource) {
               return await this.b2FileSource.getSignedUrl(bucket, file, ctx["token"]);
+            }
+          } else {
+            let urlFormat = new URL(s);
+            if(urlFormat && urlFormat.protocol == "cloudfront:") {
+              const url = s.replace("cloudfront://", "https://");
+              urlFormat = new URL(s.replace("cloudfront://", "https://"));
+              const host = urlFormat.host;
+              //const path = urlFormat.pathname;
+
+              const settings = await this.sourcesDb.get("cloudfront-settings" ,host);
+              const signedUrl = cf.getSignedUrl(url, {
+                expireTime: new Date().getTime() + (settings.expirationMs || 86400000),
+                keypairId: settings.keypairId,
+                privateKeyString: settings.privateKeyString,
+              });
+              return signedUrl;
             }
           }
 
