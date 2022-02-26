@@ -13,9 +13,11 @@
     "nodemon": "^1.11.0",
     "source-map-loader": "^0.2.4",
     "ts-loader": "^5.4.5",
-    "typescript": "^3.7.4"
+    "ts-node": "^10.5.0",
+    "typescript": "^3.9.10"
   },
   "scripts": {
+    "watch": "tsc --watch",
     "start": "nodemon --exec ./node_modules/.bin/ts-node -- ./index.ts",
     "build": "NODE_ENV=production; tsc && cp -f package.json out/package.json && cd out && npm i --production",
     "test": "mocha"
@@ -31,6 +33,7 @@
     "greenlock-express": "^4.0.1",
     "http": "^0.0.0",
     "jimp": "^0.6.0",
+    "jsonwebtoken": "^8.5.1",
     "koa": "^2.6.2",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
