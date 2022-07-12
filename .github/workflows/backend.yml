@@ -1,0 +1,88 @@
+name: Backend
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x, 16.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Install
+      run: npm install
+      working-directory: maestro-server
+    - name: Build
+      run: npm run build
+      working-directory: maestro-server
+
+  build-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the docker container
+      run: docker build -t maestro-server-lambda .
+      working-directory: maestro-server
+
+  terraform:
+    environment: Production
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VAR_access_token: ${{ secrets.ACCESS_TOKEN }}
+      TF_VAR_tmdb_key: ${{ secrets.TMDB_KEY }}
+      TF_VAR_main_maestro_account: ${{ secrets.MAESTRO_MAIN_ACCOUNT }}
+      TF_VAR_cloudflare_email: ${{ secrets.CLOUDFLARE_EMAIL }}
+      TF_VAR_cloudflare_key: ${{ secrets.CLOUDFLARE_KEY }}
+      TF_VAR_dns_zone: ${{ secrets.DNS_ZONE }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js 12.x
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+    - name: Install
+      run: npm install
+      working-directory: maestro-server
+    - name: Build
+      run: npm run build
+      working-directory: maestro-server
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+        aws-region: us-east-2
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 0.12.24
+    - name: Terraform Init
+      id: init
+      run: terraform init
+      working-directory: maestro-server/terraform/lambdas
+    - name: Terraform Plan
+      id: plan
+      run: terraform plan -out out.tfplan
+      working-directory: maestro-server/terraform/lambdas
+    - name: Terraform apply
+      id: apply
+      run: terraform apply out.tfplan
+      if: github.event.pull_request.merged == true
+
