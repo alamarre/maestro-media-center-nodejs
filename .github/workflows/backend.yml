@@ -1,10 +1,9 @@
 name: Backend
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
   build:
