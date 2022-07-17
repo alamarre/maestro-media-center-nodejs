@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket  = "terraform.omny.ca"
-    key     = "lambdas"
-    region  = "us-east-1"
+    bucket = "terraform.omny.ca"
+    key    = "lambdas"
+    region = "us-east-1"
   }
 }
 
@@ -358,6 +358,8 @@ resource "aws_lambda_function" "maestro_web" {
       MAIN_ACCOUNT         = var.main_maestro_account
       ALLOW_ADMIN_READONLY = "true"
       BASE_B2_VIDEO_URL    = "https://videos.al.workers.dev/videos"
+      PUBLIC_KEY           = var.public_key
+      PRIVATE_KEY          = var.private_key
     }
   }
 }
