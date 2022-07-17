@@ -51,8 +51,8 @@ app.use(filesRouter.routes());
 app.use(filesRouter.allowedMethods());
 
 const profileRouter = new Router({ prefix: "/api/v1.0/profiles", });
-const ProfilesApi = require("./apis/Profiles");
-new ProfilesApi(db, profileRouter);
+import ProfilesApi from "./apis/Profiles";
+new ProfilesApi(db).init(profileRouter);
 app.use(profileRouter.routes());
 app.use(profileRouter.allowedMethods());
 

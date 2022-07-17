@@ -1,9 +1,7 @@
 const logger = require("../impl/logger").logger("TvShowsApi");
 
-class TvShowsApi {
-  constructor(db, router) {
-    this.router = router;
-    this.init();
+export default class TvShowsApi {
+  constructor(private db) {
     this.db = db;
   }
 
@@ -23,11 +21,9 @@ class TvShowsApi {
     ctx.body = { result: "OK", };
   }
 
-  init() {
-    this.router.get("/keep-watching", this.listShowsInProgress.bind(this));
-    this.router.post("/keep-watching", this.postShowProgress.bind(this));
-    this.router.get("/recent", this.listRecentShows.bind(this));
+  init(router) {
+    router.get("/keep-watching", this.listShowsInProgress.bind(this));
+    router.post("/keep-watching", this.postShowProgress.bind(this));
+    router.get("/recent", this.listRecentShows.bind(this));
   }
 }
-
-module.exports = TvShowsApi;

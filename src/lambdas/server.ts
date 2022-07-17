@@ -16,6 +16,8 @@ const { loggingMiddleware, errorHandler, } = require("../impl/logger");
 app.use(loggingMiddleware("Maestro Media Center"));
 app.on("error", errorHandler);
 
+import IApi from "../apis/IApi";
+
 const S3Db = require("../impl/aws/S3Db");
 let port = 3000;
 const portString = process.env.PORT;
@@ -23,11 +25,18 @@ if (portString) {
   port = parseInt(portString);
 }
 
+function mapApi(prefix: string, api: IApi) {
+  const router = new Router({ prefix });
+  api.init(router);
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+}
+
 const cors = require("@koa/cors");
 const defaultRouter = new Router();
 app.use(cors());
 
-const UserSpecificDb = require("../impl/aws/UserSpecificDb");
+import UserSpecificDb from "../impl/aws/UserSpecificDb";
 const s3 = new AWS.S3();
 //const globalS3Db = new S3Db(s3, process.env.DB_BUCKET);
 
@@ -63,11 +72,10 @@ app.use(async (ctx, next) => {
   }
 });
 
-
-const healthApi = require("../apis/Health");
+import healthApi from "../apis/Health";
 defaultRouter.get("/health", healthApi);
 
-const IpsApi = require("../apis/Ips");
+import IpsApi from "../apis/Ips";
 defaultRouter.get("/api/v1.0/server/ips", IpsApi);
 
 app.use(defaultRouter.routes());
@@ -82,78 +90,46 @@ const b2FileSource = process.env.BASE_B2_VIDEO_URL ? new B2FileSource(db) : null
 const DbVideoMapper = require("../impl/aws/DbVideoMapper");
 const videoMapper = new DbVideoMapper(s3db, dynamoDb, b2FileSource);
 
-const b2Router = new Router({ prefix: "/api/v1.0/b2", });
 import B2FilesApi from "../apis/B2Files";
-new B2FilesApi(b2Router, b2FileSource, db);
-app.use(b2Router.routes());
-app.use(b2Router.allowedMethods());
+mapApi("/api/v1.0/b2", new B2FilesApi(b2FileSource, db));
 
-const accountRouter = new Router({ prefix: "/api/v1.0/account", });
-const AccountApi = require("../apis/Account");
-new AccountApi(accountRouter);
-app.use(accountRouter.routes());
-app.use(accountRouter.allowedMethods());
+import AccountApi from "../apis/Account";
+mapApi("/api/v1.0/account", new AccountApi());
 
 import CategoryRestriction from "../parentalcontrol/CategoryRestriction";
+
 const categoryDb = s3db;
 const categoryRestriction = new CategoryRestriction(db, categoryDb);
 
-const filesRouter = new Router({ prefix: "/api/v1.0/folders", });
-const FilesApi = require("../apis/Files");
-new FilesApi(videoMapper, db, filesRouter, categoryRestriction);
-app.use(filesRouter.routes());
-app.use(filesRouter.allowedMethods());
+import FilesApi from "../apis/Files";
+mapApi("/api/v1.0/folders", new FilesApi(videoMapper, db, categoryRestriction));
 
-const profileRouter = new Router({ prefix: "/api/v1.0/profiles", });
-const ProfilesApi = require("../apis/Profiles");
-new ProfilesApi(db, profileRouter);
-app.use(profileRouter.routes());
-app.use(profileRouter.allowedMethods());
+import ProfilesApi from "../apis/Profiles";
+mapApi("/api/v1.0/profiles", new ProfilesApi(db));
 
-const playlistRouter = new Router({ prefix: "/api/v1.0/playlists", });
-const PlaylistApi = require("../apis/Playlists");
-new PlaylistApi(db, playlistRouter);
-app.use(playlistRouter.routes());
-app.use(playlistRouter.allowedMethods());
+import PlaylistApi from "../apis/Playlists";
+mapApi("/api/v1.0/playlists", new PlaylistApi(db,));
 
-const tvRouter = new Router({ prefix: "/api/v1.0/shows", });
-const TvShowsApi = require("../apis/TvShows");
-new TvShowsApi(db, tvRouter);
-app.use(tvRouter.routes());
-app.use(tvRouter.allowedMethods());
+import TvShowsApi from "../apis/TvShows";
+mapApi("/api/v1.0/shows", new TvShowsApi(db));
 
-const collectionsRouter = new Router({ prefix: "/api/v1.0/collections", });
-const CollectionsApi = require("../apis/Collections");
-new CollectionsApi(db, collectionsRouter);
-app.use(collectionsRouter.routes());
-app.use(collectionsRouter.allowedMethods());
+import CollectionsApi from "../apis/Collections";
+mapApi("/api/v1.0/collections", new CollectionsApi(db));
 
-const homepageCollectionsRouter = new Router({ prefix: "/api/v1.0/homepage_collections", });
-const HomepageCollectionsApi = require("../apis/HomepageCollections");
-new HomepageCollectionsApi(db, homepageCollectionsRouter);
-app.use(homepageCollectionsRouter.routes());
-app.use(homepageCollectionsRouter.allowedMethods());
+import HomepageCollectionsApi from "../apis/HomepageCollections";
+mapApi("/api/v1.0/homepage_collections", new HomepageCollectionsApi(db));
 
-const videosRouter = new Router({ prefix: "/api/v1.0/videos", });
-const VideosApi = require("../apis/Videos");
-new VideosApi(videosRouter, cacheToDynamo, db);
-app.use(videosRouter.routes());
-app.use(videosRouter.allowedMethods());
+import VideosApi from "../apis/Videos";
+mapApi("/api/v1.0/videos", new VideosApi(cacheToDynamo, db));
 
-const MetaDataManager = require("../metadata/MetadataManager");
+import MetaDataManager from "../metadata/MetadataManager";
 const metaDataManager = new MetaDataManager(db);
 
-const serversRouter = new Router({ prefix: "/api/v1.0/servers", });
-const ServersApi = require("../apis/Servers");
-new ServersApi(db, serversRouter);
-app.use(serversRouter.routes());
-app.use(serversRouter.allowedMethods());
+import ServersApi from "../apis/Servers";
+mapApi("/api/v1.0/servers", new ServersApi(db));
 
-const metadataRouter = new Router({ prefix: "/api/v1.0/metadata", });
-const MetadataApi = require("../apis/Metadata");
-new MetadataApi(metadataRouter, metaDataManager);
-app.use(metadataRouter.routes());
-app.use(metadataRouter.allowedMethods());
+import MetadataApi from "../apis/Metadata";
+mapApi("/api/v1.0/metadata", new MetadataApi(metaDataManager));
 
 const serverless = require("serverless-http");
 module.exports.handler = serverless(app);
