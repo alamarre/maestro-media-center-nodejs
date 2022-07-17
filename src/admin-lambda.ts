@@ -30,7 +30,7 @@ const { loggingMiddleware, errorHandler, } = require("./impl/logger");
 app.use(loggingMiddleware("Maestro Media Center"));
 app.on("error", errorHandler);
 
-const UserSpecificDb = require("./impl/aws/UserSpecificDb");
+import UserSpecificDb from "./impl/aws/UserSpecificDb";
 const DynamoDb = require("./impl/aws/DynamoDb");
 const dynamoDb = new UserSpecificDb("db");
 

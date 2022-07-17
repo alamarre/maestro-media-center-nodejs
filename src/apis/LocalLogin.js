@@ -49,7 +49,6 @@ class LocalLogin {
           if(authHeader && authHeader.length > "Bearer ".length) {
             tokenValue = authHeader.substring("Bearer ".length);
           }
-
         }
         if (typeof tokenValue != "string") {
             tokenValue = ctx.query["access_token"];

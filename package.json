@@ -1,10 +1,10 @@
 {
-  "name": "maestro-media-center-typescript",
+  "name": "maestro-media-center-node",
   "version": "1.0.0",
   "main": "src/index.js",
-  "repository": "git@github.com:alamarre/maestro-media-center-typescript.git",
+  "repository": "git@github.com:alamarre/maestro-media-center-node.git",
   "author": "Al Lamarre <alamarre@gmail.com>",
-  "license": "AGPL",
+  "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "@types/node": "^11.13.17",
     "@types/react": "^16.9.17",
@@ -14,10 +14,11 @@
     "source-map-loader": "^0.2.4",
     "ts-loader": "^5.4.5",
     "ts-node": "^10.5.0",
-    "typescript": "^3.9.10"
+    "typescript": "^4.7.4"
   },
   "scripts": {
-    "watch": "tsc --watch",
+    "watch": "tsc --watch --incremental",
+    "watch:debug": "nodemon --inspect=5858 -e ts,tsx --exec node -r ts-node/register ./src/lambdas/server.ts",
     "start": "nodemon --exec ./node_modules/.bin/ts-node -- ./index.ts",
     "build": "NODE_ENV=production; tsc && cp -f package.json out/package.json && cd out && npm i --production",
     "test": "mocha"

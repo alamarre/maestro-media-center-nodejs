@@ -1,11 +1,11 @@
 import B2FileSource from '../impl/backblaze/B2FileSource';
 import IDatabase from '../database/IDatabase';
+import IApi from './IApi';
+const Router = require("koa-router");
 
-export default class B2FilesApi {
-  constructor(private router, private b2FileSource: B2FileSource, private db: IDatabase) {
-    this.init();
+export default class B2FilesApi implements IApi {
+  constructor(private b2FileSource: B2FileSource, private db: IDatabase) {
   }
-
 
   async getInfoForUrl(ctx) {
     const { bucket, file, } = ctx.params;
@@ -13,7 +13,7 @@ export default class B2FilesApi {
     ctx.body = result;
   }
 
-  init() {
-    this.router.get("/:bucket/:file*", this.getInfoForUrl.bind(this));
+  init(router: typeof Router) {
+    router.get("/:bucket/:file*", this.getInfoForUrl.bind(this));
   }
 }

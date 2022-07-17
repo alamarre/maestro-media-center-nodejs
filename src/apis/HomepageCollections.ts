@@ -1,8 +1,8 @@
-class HomepageCollectionsApi {
-  constructor(db, router) {
-    this.router = router;
-    this.init();
-    this.db = db;
+import IApi from "./IApi";
+const Router = require("koa-router");
+
+export default class HomepageCollectionsApi implements IApi {
+  constructor(private db) {
   }
   async list(ctx) {
     const listing = await this.db.list("homepage_collections");
@@ -15,10 +15,8 @@ class HomepageCollectionsApi {
     ctx.body = (collectionInfo);
   }
 
-  init() {
-    this.router.get("/", this.list.bind(this));
-    this.router.get("/:collection", this.get.bind(this));
+  init(router) {
+    router.get("/", this.list.bind(this));
+    router.get("/:collection", this.get.bind(this));
   }
 }
-
-module.exports = HomepageCollectionsApi;
