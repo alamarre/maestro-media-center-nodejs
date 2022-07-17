@@ -57,3 +57,11 @@ variable "cloudflare_key" {
 variable "dns_zone" {
   type = string
 }
+
+variable "public_key" {
+  type = string
+}
+
+variable "private_key" {
+  type = string
+}

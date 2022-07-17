@@ -46,6 +46,8 @@ jobs:
       TF_VAR_cloudflare_email: ${{ secrets.CLOUDFLARE_EMAIL }}
       TF_VAR_cloudflare_key: ${{ secrets.CLOUDFLARE_KEY }}
       TF_VAR_dns_zone: ${{ secrets.DNS_ZONE }}
+      TF_VAR_public_key: ${{ secrets.PUBLIC_KEY }}
+      TF_VAR_private_key: ${{ secrets.PRIVATE_KEY }}
 
     steps:
     - uses: actions/checkout@v2
