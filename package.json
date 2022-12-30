@@ -11,8 +11,8 @@
     "builtin-modules": "^3.0.0",
     "eslint": "^5.2.0",
     "nodemon": "^1.11.0",
-    "source-map-loader": "^0.2.4",
-    "ts-loader": "^5.4.5",
+    "source-map-loader": "^4.0.1",
+    "ts-loader": "^9.4.2",
     "ts-node": "^10.5.0",
     "typescript": "^3.9.10"
   },
