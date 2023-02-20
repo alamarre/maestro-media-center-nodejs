@@ -80,8 +80,9 @@ jobs:
       working-directory: terraform/lambdas
     - name: Terraform apply
       id: apply
-      if: github.event.pull_request.merged == true
+      if: github.event.pull_request.merged == true || (github.event_name == 'push' && github.ref == 'refs/heads/main')
       run: terraform apply out.tfplan
       working-directory: terraform/lambdas
+
 
 
