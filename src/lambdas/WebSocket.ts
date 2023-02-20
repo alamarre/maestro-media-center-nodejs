@@ -4,8 +4,8 @@ require("./WebsocketApiGatewayPatch");
 
 const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
-const DynamoDb = require("../impl/aws/DynamoDb");
-const db = new DynamoDb(dynamoClient, DYNAMO_TABLE);
+import DynamoDb from "../impl/aws/DynamoDb";
+const db = new DynamoDb(dynamoClient, DYNAMO_TABLE, null);
 
 const SimplePasswordAuth = require("../impl/local/SimplePasswordAuth");
 const userManager = new SimplePasswordAuth(db);

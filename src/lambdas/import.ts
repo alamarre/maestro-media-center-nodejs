@@ -11,8 +11,8 @@ const dynamoClient = new AWS.DynamoDB.DocumentClient();
 const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
 
 const CacheToDynamo = require("../impl/aws/CacheToDynamo");
-const DynamoDb = require("../impl/aws/DynamoDb");
-const db = new DynamoDb(dynamoClient, DYNAMO_TABLE);
+import DynamoDb from "../impl/aws/DynamoDb";
+const db = new DynamoDb(dynamoClient, DYNAMO_TABLE, null);
 
 
 const s3 = new AWS.S3();

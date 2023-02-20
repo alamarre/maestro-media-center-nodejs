@@ -31,7 +31,7 @@ app.use(loggingMiddleware("Maestro Media Center"));
 app.on("error", errorHandler);
 
 import UserSpecificDb from "./impl/aws/UserSpecificDb";
-const DynamoDb = require("./impl/aws/DynamoDb");
+import DynamoDb from "./impl/aws/DynamoDb";
 const dynamoDb = new UserSpecificDb("db");
 
 const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
