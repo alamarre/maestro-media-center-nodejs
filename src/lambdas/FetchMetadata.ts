@@ -16,7 +16,7 @@ import Tmdb from "../metadata/TheMovieDb";
 const tmdb = new Tmdb(db);
 const metadataFetcher = new S3MetadataFetcher(s3, sns, IMAGE_BUCKET, metadataManager, tmdb);
 
-const normalize = require("./utilities/EventNormalizer");
+import normalize from "./utilities/EventNormalizer";
 
 exports.handler = async (event, context, callback) => {
   await Promise.all(normalize(event).map(async record => {

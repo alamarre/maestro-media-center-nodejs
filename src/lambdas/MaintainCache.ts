@@ -7,7 +7,7 @@ import S3Db from "../impl/aws/S3Db";
 const db = new S3Db(s3, process.env.DB_BUCKET, "");
 const s3CacheManager = new S3CacheManager({ s3, bucket: process.env.BUCKET, db, });
 
-const normalize = require("./utilities/EventNormalizer");
+import normalize from "./utilities/EventNormalizer";
 exports.handler = async (event, context, callback) => {
   await Promise.all(normalize(event).map(async record => {
     if (record.table === "video_sources") {
