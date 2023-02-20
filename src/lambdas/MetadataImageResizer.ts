@@ -8,7 +8,7 @@ const MAIN_ACCOUNT = process.env.MAIN_ACCOUNT;
 
 const s3 = new AWS.S3({ region: "us-east-1", });
 
-const MetadataManager = require("../metadata/MetadataManager");
+import MetadataManager from "../metadata/MetadataManager";
 
 const SOURCE_BUCKET = process.env.SOURCE_BUCKET || "metadata-images.omny.ca";
 const DESTINATION_BUCKET = process.env.DESTINATION_BUCKET || "maestro-images.omny.ca";

@@ -14,7 +14,7 @@ const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const sns = new AWS.SNS();
 
-const MetadataManager = require("./metadata/MetadataManager");
+import MetadataManager from "./metadata/MetadataManager";
 
 let port = 3000;
 const portString = process.env.PORT;

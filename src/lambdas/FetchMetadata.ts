@@ -1,6 +1,6 @@
 import AWS = require("aws-sdk");
 
-const MetadataManager = require("../metadata/MetadataManager");
+import MetadataManager from "../metadata/MetadataManager";
 const s3 = new AWS.S3();
 const sns = new AWS.SNS();
 
