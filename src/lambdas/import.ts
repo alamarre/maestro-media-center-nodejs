@@ -18,33 +18,33 @@ const db = new DynamoDb(dynamoClient, DYNAMO_TABLE);
 const s3 = new AWS.S3();
 //const S3CacheManager = require("../impl/aws/S3CacheManager");
 //const CacheToS3 = require("../impl/aws/CacheToS3");
-const S3Db = require("../impl/aws/S3Db");
-const s3Db = new S3Db(s3, process.env.DB_BUCKET);
+import S3Db from "../impl/aws/S3Db";
+const s3Db = new S3Db(s3, process.env.DB_BUCKET, "");
 /*const cacheToS3 = new CacheToS3(s3Db, process.env.BUCKET);
 const s3CacheManager = new S3CacheManager({s3, bucket: process.env.BUCKET, s3Db,});*/
 
 async function run() {
-    const queryString = `?access_token=${ACCESS_TOKEN}`;
+  const queryString = `?access_token=${ACCESS_TOKEN}`;
 
-    const cacheResponse = await fetch(`${SERVER}/api/v1.0/folders/cache${queryString}`);
-    const cache = await cacheResponse.json();
+  const cacheResponse = await fetch(`${SERVER}/api/v1.0/folders/cache${queryString}`);
+  const cache = await cacheResponse.json();
 
-    const rootFoldersResponse = await fetch(`${SERVER}/api/v1.0/folders/root${queryString}`);
-    const rootFolders = await rootFoldersResponse.json();
-    const currentCache = await s3Db.get("video", "cache");
-    const cacheToDynamo = new CacheToDynamo(db, currentCache);
-    await cacheToDynamo.addCache(cache, rootFolders, BASE_VIDEO_URL);
-    //await cacheToS3.addCache(cache, rootFolders, BASE_VIDEO_URL);
+  const rootFoldersResponse = await fetch(`${SERVER}/api/v1.0/folders/root${queryString}`);
+  const rootFolders = await rootFoldersResponse.json();
+  const currentCache = await s3Db.get("video", "cache");
+  const cacheToDynamo = new CacheToDynamo(db, currentCache);
+  await cacheToDynamo.addCache(cache, rootFolders, BASE_VIDEO_URL);
+  //await cacheToS3.addCache(cache, rootFolders, BASE_VIDEO_URL);
 
-    //await s3CacheManager.buildAndStoreCache();
+  //await s3CacheManager.buildAndStoreCache();
 
-    return "complete";
+  return "complete";
 }
 
 module.exports.handler = run;
-if(process.env.RUN_LOCAL) {
-    run().catch(e => {
-        console.error(e);
-        process.exit(1);
-    });
+if (process.env.RUN_LOCAL) {
+  run().catch(e => {
+    console.error(e);
+    process.exit(1);
+  });
 }
