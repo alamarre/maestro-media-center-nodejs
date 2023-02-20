@@ -73,10 +73,39 @@ class CacheToDynamo {
         return await this.addUrlToFile(file, url);
     }
 
+    async deleteMovie(name, url) {
+      const file = `Movies/${name}`;
+      return await this.removeUrlFromFile(file, url);
+    }
+
     async addEpisode(show, season, episode, url) {
         const file = `TV Shows/${show}/${season}/${episode}`;
         return await this.addUrlToFile(file, url);
     }
+
+    async deleteEpisode(show, season, episode, url) {
+      const file = `TV Shows/${show}/${season}/${episode}`;
+      return await this.removeUrlFromFile(file, url);
+    }
+
+    async removeUrlFromFile(file, url) {
+      let type;
+      if(file.endsWith(".mp4")) {
+          type = "sources";
+          file = file.substring(0, file.lastIndexOf("."));
+      } else if(file.endsWith(".vtt")) {
+          type = "subtitles";
+          file = file.substring(0, file.lastIndexOf(".vtt"));
+      } else {
+          return;
+      }
+      await this.db.removeStringFromSet([url,], type, "video_sources", file);
+      const sourceInfo = await this.db.get("video_sources", file);
+      if(!(sourceInfo.sources && sourceInfo.sources.length > 0) &&
+        !(sourceInfo.subtitles && sourceInfo.subtitles.length > 0)) {
+        await this.db.delete("video_sources", file);
+      }
+  }
 
     async addUrlToFile(file, url) {
         let type;

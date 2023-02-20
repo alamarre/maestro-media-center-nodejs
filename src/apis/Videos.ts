@@ -38,12 +38,12 @@ export default class VideosApi {
     const videoType = type.toLowerCase();
     if (videoType === "movie") {
       const moviePart = path.substring(path.lastIndexOf("/") + 1);
-      await this.cacheManager.addMovie(moviePart, `${rootUrl}${path}`);
+      await this.cacheManager.deleteMovie(moviePart, `${rootUrl}${path}`);
     } else if (videoType === "tv") {
       //await this.cacheManager.addTvShow(path, rootUrl);
       // skip root folder
       const [, showName, season, episode,] = path.split("/");
-      await this.cacheManager.addEpisode(showName, season, episode, `${rootUrl}${path}`);
+      await this.cacheManager.deleteEpisode(showName, season, episode, `${rootUrl}${path}`);
     } else {
       ctx.status = 400;
     }
