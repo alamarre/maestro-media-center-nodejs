@@ -4,7 +4,7 @@ import AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const S3CacheManager = require("../impl/aws/S3CacheManager");
 import S3Db from "../impl/aws/S3Db";
-const db = new S3Db(s3, process.env.DB_BUCKET);
+const db = new S3Db(s3, process.env.DB_BUCKET, "");
 const s3CacheManager = new S3CacheManager({ s3, bucket: process.env.BUCKET, db, });
 
 const normalize = require("./utilities/EventNormalizer");
