@@ -1,6 +1,6 @@
 import db from "./utilities/DefaultDb";
 
-const normalize = require("./utilities/EventNormalizer");
+import normalize from "./utilities/EventNormalizer";
 
 exports.handler = async (event, context, callback) => {
   await Promise.all(normalize(event).map(async record => {
