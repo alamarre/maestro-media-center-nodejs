@@ -1,8 +1,4 @@
-import AWS = require("aws-sdk");
-const DYNAMO_TABLE = process.env.DYNAMO_TABLE || "maestro-media-center";
-const dynamoClient = new AWS.DynamoDB.DocumentClient();
-const DynamoDb = require("../impl/aws/DynamoDb");
-const db = new DynamoDb(dynamoClient, DYNAMO_TABLE);
+import db from "./utilities/DefaultDb";
 
 const normalize = require("./utilities/EventNormalizer");
 
