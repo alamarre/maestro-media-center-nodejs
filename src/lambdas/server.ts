@@ -18,7 +18,7 @@ app.on("error", errorHandler);
 
 import IApi from "../apis/IApi";
 
-const S3Db = require("../impl/aws/S3Db");
+import S3Db from "../impl/aws/S3Db";
 let port = 3000;
 const portString = process.env.PORT;
 if (portString) {
