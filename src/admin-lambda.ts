@@ -40,7 +40,7 @@ const db = dynamoDb;
 
 const authDB = new DynamoDb(dynamoClient, DYNAMO_TABLE, "admin_auth");
 
-const healthApi = require("./apis/Health");
+import healthApi from "./apis/Health";
 defaultRouter.get("/health", healthApi);
 
 app.use(defaultRouter.routes());
