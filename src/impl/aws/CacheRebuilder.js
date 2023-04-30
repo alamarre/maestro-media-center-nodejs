@@ -5,7 +5,7 @@ const dynamoClient = new AWS.DynamoDB.DocumentClient();
 //const DynamoDb = require("../impl/aws/DynamoDb");
 //const db = new DynamoDb(dynamoClient, DYNAMO_TABLE);
 const s3 = new AWS.S3();
-const S3Db = require("./S3Db");
+import S3Db from "./S3Db";
 const db = new S3Db(s3, process.env.DB_BUCKET);
 
 
@@ -47,7 +47,7 @@ module.exports = async () => {
             //sortKeys.push(sortKey);
             addToCache(cache, sortKey.split("/"));
         }
-        
+
         if(result.LastEvaluatedKey) {
             queryParams.ExclusiveStartKey = result.LastEvaluatedKey;
             result = await dynamoClient.query(queryParams).promise();
