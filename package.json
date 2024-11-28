@@ -34,7 +34,7 @@
     "greenlock": "^4.0.2",
     "greenlock-express": "^4.0.1",
     "http": "^0.0.0",
-    "jimp": "^0.6.0",
+    "jimp": "^0.22.7",
     "jsonwebtoken": "^8.5.1",
     "koa": "^2.6.2",
     "koa-bodyparser": "^4.2.1",
