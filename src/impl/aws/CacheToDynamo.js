@@ -96,7 +96,7 @@ class CacheToDynamo {
       } else if(file.endsWith(".vtt")) {
           type = "subtitles";
           file = file.substring(0, file.lastIndexOf(".vtt"));
-          const forcedIndex = file.lastIndexOf("en.forced");
+          const forcedIndex = file.lastIndexOf(".en.forced");
           if(forcedIndex > 0) {
             file = file.substring(0, forcedIndex);
           }
@@ -119,7 +119,7 @@ class CacheToDynamo {
         } else if(file.endsWith(".vtt")) {
             type = "subtitles";
             file = file.substring(0, file.lastIndexOf(".vtt"));
-            const forcedIndex = file.lastIndexOf("en.forced");
+            const forcedIndex = file.lastIndexOf(".en.forced");
             if(forcedIndex > 0) {
               file = file.substring(0, forcedIndex);
             }
